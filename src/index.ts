@@ -1,11 +1,15 @@
 import { Hono } from 'hono';
-import type { Bindings, Question, SessionItem } from './types';
+import { cors } from 'hono/cors';
+import type { Bindings, Question, Resource, SessionItem } from './types';
 import { evaluateAnswer } from './lib/evaluator';
 import { generateRevisionPlan, type CategoryBreakdown } from './lib/planner';
 
 const app = new Hono<{ Bindings: Bindings }>();
 
 const QUESTIONS_PER_SESSION = 6;
+
+// Le frontend (Cloudflare Pages) est servi sur un domaine distinct du Worker.
+app.use('/api/*', cors());
 
 app.get('/', (c) => c.json({ name: 'SkillForge API', status: 'ok' }));
 
@@ -16,13 +20,14 @@ app.post('/api/sessions', async (c) => {
   const sessionId = crypto.randomUUID();
 
   const questions = await c.env.DB.prepare(
-    `SELECT id, category_id, difficulty, prompt, rubric
-     FROM questions
+    `SELECT q.id, q.category_id, q.difficulty, q.prompt, q.rubric, cat.slug AS category_slug
+     FROM questions q
+     JOIN categories cat ON cat.id = q.category_id
      ORDER BY RANDOM()
      LIMIT ?`
   )
     .bind(QUESTIONS_PER_SESSION)
-    .all<Question>();
+    .all<Question & { category_slug: string }>();
 
   if (!questions.results.length) {
     return c.json({ error: 'Aucune question disponible — la base a-t-elle été seedée ?' }, 500);
@@ -46,8 +51,25 @@ app.post('/api/sessions', async (c) => {
       question_id: q.id,
       prompt: q.prompt,
       difficulty: q.difficulty,
+      category_slug: q.category_slug,
     })),
   });
+});
+
+// Révèle l'indice d'une question, à la demande (jamais renvoyé avec la liste
+// de questions de la session pour ne pas biaiser la réponse spontanée).
+app.get('/api/questions/:id/hint', async (c) => {
+  const questionId = c.req.param('id');
+
+  const question = await c.env.DB.prepare(`SELECT hint FROM questions WHERE id = ?`)
+    .bind(questionId)
+    .first<{ hint: string | null }>();
+
+  if (!question) {
+    return c.json({ error: 'Question introuvable' }, 404);
+  }
+
+  return c.json({ hint: question.hint ?? null });
 });
 
 // Soumet une réponse à une question de la session et déclenche l'évaluation LLM-as-judge
@@ -56,7 +78,7 @@ app.post('/api/sessions/:id/answer', async (c) => {
   const body = await c.req.json<{ question_id: number; answer: string }>();
 
   const question = await c.env.DB.prepare(
-    `SELECT id, category_id, difficulty, prompt, rubric FROM questions WHERE id = ?`
+    `SELECT id, category_id, difficulty, prompt, rubric, hint, resources FROM questions WHERE id = ?`
   )
     .bind(body.question_id)
     .first<Question>();
@@ -75,7 +97,9 @@ app.post('/api/sessions/:id/answer', async (c) => {
     .bind(body.answer, evaluation.score, evaluation.feedback, sessionId, body.question_id)
     .run();
 
-  return c.json({ evaluation });
+  const resources: Resource[] = question.resources ? JSON.parse(question.resources) : [];
+
+  return c.json({ evaluation, resources });
 });
 
 // Clôture la session et génère le plan de révision personnalisé
@@ -121,16 +145,21 @@ app.get('/api/sessions/:id', async (c) => {
   }
 
   const items = await c.env.DB.prepare(
-    `SELECT si.*, q.prompt, q.difficulty
+    `SELECT si.*, q.prompt, q.difficulty, q.hint, q.resources
      FROM session_items si
      JOIN questions q ON q.id = si.question_id
      WHERE si.session_id = ?
      ORDER BY si.position`
   )
     .bind(sessionId)
-    .all<SessionItem & { prompt: string; difficulty: number }>();
+    .all<SessionItem & { prompt: string; difficulty: number; hint: string | null; resources: string | null }>();
 
-  return c.json({ session, items: items.results });
+  const itemsWithParsedResources = items.results.map((item) => ({
+    ...item,
+    resources: item.resources ? (JSON.parse(item.resources) as Resource[]) : [],
+  }));
+
+  return c.json({ session, items: itemsWithParsedResources });
 });
 
 export default app;

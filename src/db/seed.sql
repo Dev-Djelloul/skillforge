@@ -1,5 +1,7 @@
 -- SkillForge — jeu de questions de départ (V1)
 -- 4 familles, difficulté 1 (junior) à 3 (senior)
+-- Chaque question porte un indice (affiché à la demande) et des ressources
+-- pour approfondir (affichées après l'évaluation de la réponse).
 
 INSERT INTO categories (slug, label) VALUES
   ('ia-ml', 'IA & Machine Learning'),
@@ -9,89 +11,137 @@ INSERT INTO categories (slug, label) VALUES
 ;
 
 -- IA & ML
-INSERT INTO questions (category_id, difficulty, prompt, rubric) VALUES
+INSERT INTO questions (category_id, difficulty, prompt, rubric, hint, resources) VALUES
   ((SELECT id FROM categories WHERE slug='ia-ml'), 1,
    'Qu''est-ce qu''un prompt, et pourquoi sa formulation influence-t-elle la qualité de la réponse d''un LLM ?',
-   '["définit le prompt comme l''instruction/contexte donné au modèle", "mentionne l''ambiguïté ou le manque de contexte comme cause d''erreur", "cite un exemple concret (rôle, format attendu, contraintes)"]'),
+   '["définit le prompt comme l''instruction/contexte donné au modèle", "mentionne l''ambiguïté ou le manque de contexte comme cause d''erreur", "cite un exemple concret (rôle, format attendu, contraintes)"]',
+   'Pensez au rôle du contexte et de la précision d''une instruction : que se passe-t-il si elle est ambiguë ?',
+   '[{"type":"article","title":"Ingénierie de prompt — Wikipédia","url":"https://fr.wikipedia.org/wiki/Ing%C3%A9nierie_de_prompt"},{"type":"video","title":"Vidéos sur le prompt engineering","url":"https://www.youtube.com/results?search_query=prompt+engineering+expliqu%C3%A9"}]'),
   ((SELECT id FROM categories WHERE slug='ia-ml'), 1,
    'Quelle est la différence entre apprentissage supervisé et non supervisé ?',
-   '["supervisé = données labellisées, objectif de prédiction", "non supervisé = pas de labels, recherche de structure/clusters", "donne un exemple pour chacun"]'),
+   '["supervisé = données labellisées, objectif de prédiction", "non supervisé = pas de labels, recherche de structure/clusters", "donne un exemple pour chacun"]',
+   'Demandez-vous : le modèle dispose-t-il d''exemples avec la bonne réponse déjà connue ?',
+   '[{"type":"article","title":"Apprentissage supervisé — Wikipédia","url":"https://fr.wikipedia.org/wiki/Apprentissage_supervis%C3%A9"},{"type":"video","title":"Vidéos sur supervisé vs non supervisé","url":"https://www.youtube.com/results?search_query=apprentissage+supervis%C3%A9+vs+non+supervis%C3%A9"}]'),
   ((SELECT id FROM categories WHERE slug='ia-ml'), 2,
    'Expliquez le principe du RAG (Retrieval-Augmented Generation) et un cas où il est préférable au fine-tuning.',
-   '["explique la récupération de documents pertinents avant génération", "mentionne l''ancrage factuel / réduction des hallucinations", "cas d''usage : connaissances fréquemment mises à jour vs fine-tuning coûteux et figé"]'),
+   '["explique la récupération de documents pertinents avant génération", "mentionne l''ancrage factuel / réduction des hallucinations", "cas d''usage : connaissances fréquemment mises à jour vs fine-tuning coûteux et figé"]',
+   'Distinguez ce qui est injecté au moment de la requête de ce qui est intégré durablement dans les poids du modèle.',
+   '[{"type":"article","title":"What is RAG? — AWS","url":"https://aws.amazon.com/what-is/retrieval-augmented-generation/"},{"type":"video","title":"Vidéos sur le RAG","url":"https://www.youtube.com/results?search_query=retrieval+augmented+generation+expliqu%C3%A9"}]'),
   ((SELECT id FROM categories WHERE slug='ia-ml'), 2,
    'Qu''est-ce que le prompt caching et dans quel contexte l''utiliseriez-vous ?',
-   '["réutilisation d''un préfixe de contexte déjà traité par le modèle", "gain de coût/latence sur des appels répétés avec contexte stable", "exemple : système de prompt fixe + instructions utilisateur variables"]'),
+   '["réutilisation d''un préfixe de contexte déjà traité par le modèle", "gain de coût/latence sur des appels répétés avec contexte stable", "exemple : système de prompt fixe + instructions utilisateur variables"]',
+   'Pensez à un système avec un long system prompt fixe et des questions utilisateur qui changent à chaque appel.',
+   '[{"type":"article","title":"Prompt caching — Anthropic Docs","url":"https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching"},{"type":"video","title":"Vidéos sur le prompt caching","url":"https://www.youtube.com/results?search_query=prompt+caching+LLM+explained"}]'),
   ((SELECT id FROM categories WHERE slug='ia-ml'), 3,
    'Vous concevez un agent qui doit appeler plusieurs outils en plusieurs étapes. Quels risques spécifiques à l''orchestration multi-étapes devez-vous anticiper ?',
-   '["boucles infinies ou appels redondants", "propagation d''erreur d''une étape à l''autre", "coût cumulé et latence", "besoin d''un état persistant / traçabilité des décisions"]'),
+   '["boucles infinies ou appels redondants", "propagation d''erreur d''une étape à l''autre", "coût cumulé et latence", "besoin d''un état persistant / traçabilité des décisions"]',
+   'Imaginez l''agent qui boucle sur lui-même ou accumule des erreurs d''une étape à l''autre : quels garde-fous poser ?',
+   '[{"type":"article","title":"Tool use — Anthropic Docs","url":"https://docs.anthropic.com/en/docs/build-with-claude/tool-use"},{"type":"video","title":"Vidéos sur les agents IA multi-étapes","url":"https://www.youtube.com/results?search_query=AI+agent+multi+step+orchestration+risks"}]'),
   ((SELECT id FROM categories WHERE slug='ia-ml'), 3,
    'Comment évalueriez-vous la qualité des réponses d''un système LLM-as-judge, sachant que le juge est lui-même un LLM ?',
-   '["biais potentiel du juge (longueur, ton, préférences stylistiques)", "rubriques explicites et critères mesurables plutôt qu''un jugement global", "validation croisée avec des évaluateurs humains sur un échantillon"]')
+   '["biais potentiel du juge (longueur, ton, préférences stylistiques)", "rubriques explicites et critères mesurables plutôt qu''un jugement global", "validation croisée avec des évaluateurs humains sur un échantillon"]',
+   'Le juge peut avoir ses propres biais — comment vérifier qu''il juge sur le fond et non sur la forme ?',
+   '[{"type":"article","title":"Judging LLM-as-a-Judge (Zheng et al.)","url":"https://arxiv.org/abs/2306.05685"},{"type":"video","title":"Vidéos sur LLM-as-a-judge","url":"https://www.youtube.com/results?search_query=LLM+as+a+judge+evaluation"}]')
 ;
 
 -- Gestion de projet digital
-INSERT INTO questions (category_id, difficulty, prompt, rubric) VALUES
+INSERT INTO questions (category_id, difficulty, prompt, rubric, hint, resources) VALUES
   ((SELECT id FROM categories WHERE slug='gestion-projet'), 1,
    'Quelle est la différence entre une méthodologie agile et un cycle en cascade (waterfall) ?',
-   '["agile = itératif, livraisons incrémentales, adaptation au changement", "cascade = séquentiel, phases figées avant la suivante", "mentionne un contexte où l''un est préférable à l''autre"]'),
+   '["agile = itératif, livraisons incrémentales, adaptation au changement", "cascade = séquentiel, phases figées avant la suivante", "mentionne un contexte où l''un est préférable à l''autre"]',
+   'Comparez la manière dont chaque approche gère un changement de périmètre en cours de route.',
+   '[{"type":"article","title":"Qu''est-ce que l''agilité ? — Atlassian","url":"https://www.atlassian.com/fr/agile"},{"type":"video","title":"Vidéos sur agile vs cascade","url":"https://www.youtube.com/results?search_query=agile+vs+waterfall+expliqu%C3%A9"}]'),
   ((SELECT id FROM categories WHERE slug='gestion-projet'), 1,
    'Qu''est-ce qu''un backlog et à quoi sert la priorisation ?',
-   '["liste des tâches/besoins à traiter", "priorisation = maximiser la valeur livrée avec des ressources limitées", "cite une méthode de priorisation (MoSCoW, valeur/effort...)"]'),
+   '["liste des tâches/besoins à traiter", "priorisation = maximiser la valeur livrée avec des ressources limitées", "cite une méthode de priorisation (MoSCoW, valeur/effort...)"]',
+   'Un backlog est en principe infini — qu''est-ce qui doit guider l''ordre dans lequel on le traite ?',
+   '[{"type":"article","title":"Le product backlog — Atlassian","url":"https://www.atlassian.com/fr/agile/scrum/backlogs"},{"type":"video","title":"Vidéos sur la priorisation du backlog","url":"https://www.youtube.com/results?search_query=priorisation+backlog+MoSCoW"}]'),
   ((SELECT id FROM categories WHERE slug='gestion-projet'), 2,
    'Le client demande une fonctionnalité supplémentaire à mi-projet sans décaler la deadline. Comment arbitrez-vous ?',
-   '["explicite le triangle délai/coût/qualité (ou périmètre)", "propose des options concrètes (retirer une autre fonctionnalité, décaler, réduire le scope)", "insiste sur la communication transparente des impacts au client"]'),
+   '["explicite le triangle délai/coût/qualité (ou périmètre)", "propose des options concrètes (retirer une autre fonctionnalité, décaler, réduire le scope)", "insiste sur la communication transparente des impacts au client"]',
+   'Rappelez-vous le triangle délai / coût / périmètre : on ne peut généralement pas fixer les trois à la fois.',
+   '[{"type":"article","title":"Triangle qualité-coût-délai — Wikipédia","url":"https://fr.wikipedia.org/wiki/Triangle_qualit%C3%A9-co%C3%BBt-d%C3%A9lai"},{"type":"video","title":"Vidéos sur l''arbitrage scope/délai/coût","url":"https://www.youtube.com/results?search_query=triangle+scope+cost+time+project+management"}]'),
   ((SELECT id FROM categories WHERE slug='gestion-projet'), 2,
    'Comment identifiez-vous et suivez-vous les risques d''un projet digital ?',
-   '["identification en amont (brainstorm, retours d''expérience)", "évaluation probabilité x impact", "plan de mitigation et suivi régulier (registre des risques)"]'),
+   '["identification en amont (brainstorm, retours d''expérience)", "évaluation probabilité x impact", "plan de mitigation et suivi régulier (registre des risques)"]',
+   'Pensez à un cycle en trois temps : identifier, évaluer, traiter — puis reprendre régulièrement.',
+   '[{"type":"article","title":"Gestion des risques — Wikipédia","url":"https://fr.wikipedia.org/wiki/Gestion_des_risques"},{"type":"video","title":"Vidéos sur le registre des risques projet","url":"https://www.youtube.com/results?search_query=registre+des+risques+projet+digital"}]'),
   ((SELECT id FROM categories WHERE slug='gestion-projet'), 3,
    'Vous héritez d''un projet avec une dette technique importante et une pression business pour livrer vite. Comment structurez-vous votre plan d''action ?',
-   '["distingue dette technique consciente vs subie", "propose un arbitrage progressif (quick wins vs refonte)", "implique les équipes techniques dans l''estimation de l''impact", "communique le compromis au sponsor/métier"]'),
+   '["distingue dette technique consciente vs subie", "propose un arbitrage progressif (quick wins vs refonte)", "implique les équipes techniques dans l''estimation de l''impact", "communique le compromis au sponsor/métier"]',
+   'Différenciez la dette choisie consciemment de celle subie faute de temps, puis raisonnez par paliers plutôt qu''en tout ou rien.',
+   '[{"type":"article","title":"Technical Debt — Martin Fowler","url":"https://martinfowler.com/bliki/TechnicalDebt.html"},{"type":"video","title":"Vidéos sur la gestion de la dette technique","url":"https://www.youtube.com/results?search_query=g%C3%A9rer+la+dette+technique+en+entreprise"}]'),
   ((SELECT id FROM categories WHERE slug='gestion-projet'), 3,
    'Quels indicateurs (KPIs) utiliseriez-vous pour piloter la santé d''un projet digital au-delà du simple respect du planning ?',
-   '["qualité (taux de bugs, dette technique)", "satisfaction utilisateur/client", "vélocité/prévisibilité de l''équipe", "valeur métier livrée vs prévue"]')
+   '["qualité (taux de bugs, dette technique)", "satisfaction utilisateur/client", "vélocité/prévisibilité de l''équipe", "valeur métier livrée vs prévue"]',
+   'Le respect du planning ne dit rien sur la qualité livrée ni la satisfaction : quels autres angles mesurer ?',
+   '[{"type":"article","title":"Agile project management metrics — Atlassian","url":"https://www.atlassian.com/fr/agile/project-management/metrics"},{"type":"video","title":"Vidéos sur les KPIs de projet digital","url":"https://www.youtube.com/results?search_query=KPI+pilotage+projet+digital"}]')
 ;
 
 -- Développement web
-INSERT INTO questions (category_id, difficulty, prompt, rubric) VALUES
+INSERT INTO questions (category_id, difficulty, prompt, rubric, hint, resources) VALUES
   ((SELECT id FROM categories WHERE slug='dev-web'), 1,
    'Quelle est la différence entre le rendu côté serveur (SSR) et côté client (CSR) ?',
-   '["SSR = HTML généré côté serveur avant envoi au navigateur", "CSR = HTML généré dans le navigateur via JS", "compromis SEO/performance initiale vs interactivité"]'),
+   '["SSR = HTML généré côté serveur avant envoi au navigateur", "CSR = HTML généré dans le navigateur via JS", "compromis SEO/performance initiale vs interactivité"]',
+   'Demandez-vous où le HTML final est construit, et ce que ça change pour le référencement et le premier affichage.',
+   '[{"type":"article","title":"Rendu côté serveur — MDN","url":"https://developer.mozilla.org/fr/docs/Glossary/SSR"},{"type":"video","title":"Vidéos sur SSR vs CSR","url":"https://www.youtube.com/results?search_query=SSR+vs+CSR+expliqu%C3%A9"}]'),
   ((SELECT id FROM categories WHERE slug='dev-web'), 1,
    'Qu''est-ce qu''une API REST et quels sont ses principes de base ?',
-   '["interface basée sur HTTP, ressources identifiées par URL", "verbes HTTP (GET/POST/PUT/DELETE) avec sémantique claire", "sans état (stateless)"]'),
+   '["interface basée sur HTTP, ressources identifiées par URL", "verbes HTTP (GET/POST/PUT/DELETE) avec sémantique claire", "sans état (stateless)"]',
+   'Pensez ressource + verbe HTTP + absence d''état conservé entre deux requêtes.',
+   '[{"type":"article","title":"REST — MDN","url":"https://developer.mozilla.org/fr/docs/Glossary/REST"},{"type":"video","title":"Vidéos sur les API REST","url":"https://www.youtube.com/results?search_query=API+REST+expliqu%C3%A9e"}]'),
   ((SELECT id FROM categories WHERE slug='dev-web'), 2,
    'Comment protégeriez-vous une API publique contre les abus (spam, surcharge) ?',
-   '["rate limiting / throttling", "authentification et clés API", "validation stricte des entrées côté serveur"]'),
+   '["rate limiting / throttling", "authentification et clés API", "validation stricte des entrées côté serveur"]',
+   'Qui peut appeler l''API, à quelle fréquence, et avec quelles données en entrée ?',
+   '[{"type":"article","title":"OWASP API Security Project","url":"https://owasp.org/www-project-api-security/"},{"type":"video","title":"Vidéos sur la protection d''une API publique","url":"https://www.youtube.com/results?search_query=rate+limiting+API+security"}]'),
   ((SELECT id FROM categories WHERE slug='dev-web'), 2,
    'Qu''est-ce que le edge computing et quel avantage apporte-t-il par rapport à une architecture serveur centralisée ?',
-   '["exécution du code au plus près de l''utilisateur (CDN/edge)", "réduction de la latence", "exemple : Cloudflare Workers, Vercel Edge Functions"]'),
+   '["exécution du code au plus près de l''utilisateur (CDN/edge)", "réduction de la latence", "exemple : Cloudflare Workers, Vercel Edge Functions"]',
+   'Rapprochez le traitement de l''utilisateur plutôt que d''un data center central : quel effet sur la latence ?',
+   '[{"type":"article","title":"What is edge computing? — Cloudflare","url":"https://www.cloudflare.com/fr-fr/learning/serverless/glossary/what-is-edge-computing/"},{"type":"video","title":"Vidéos sur le edge computing","url":"https://www.youtube.com/results?search_query=edge+computing+expliqu%C3%A9"}]'),
   ((SELECT id FROM categories WHERE slug='dev-web'), 3,
    'Comment concevriez-vous l''architecture d''une application serverless nécessitant une base de données relationnelle et une recherche sémantique ?',
-   '["sépare les responsabilités (DB relationnelle vs index vectoriel)", "aborde la cohérence des données entre les deux systèmes", "mentionne les contraintes serverless (cold start, limites de temps d''exécution)"]'),
+   '["sépare les responsabilités (DB relationnelle vs index vectoriel)", "aborde la cohérence des données entre les deux systèmes", "mentionne les contraintes serverless (cold start, limites de temps d''exécution)"]',
+   'Séparez le stockage transactionnel du stockage vectoriel, et pensez aux limites d''exécution propres au serverless.',
+   '[{"type":"article","title":"Cloudflare Vectorize — Docs","url":"https://developers.cloudflare.com/vectorize/"},{"type":"video","title":"Vidéos sur les architectures serverless + recherche vectorielle","url":"https://www.youtube.com/results?search_query=serverless+architecture+vector+search"}]'),
   ((SELECT id FROM categories WHERE slug='dev-web'), 3,
    'Quelles vulnérabilités OWASP considérez-vous prioritaires pour une application web grand public, et comment les mitiger ?',
-   '["cite au moins 2 vulnérabilités concrètes (injection, XSS, auth cassée...)", "propose une mitigation technique précise pour chacune", "mentionne l''importance de la validation côté serveur, pas seulement côté client"]')
+   '["cite au moins 2 vulnérabilités concrètes (injection, XSS, auth cassée...)", "propose une mitigation technique précise pour chacune", "mentionne l''importance de la validation côté serveur, pas seulement côté client"]',
+   'Le OWASP Top 10 est une bonne base de départ — laquelle touche le plus une appli grand public selon vous ?',
+   '[{"type":"article","title":"OWASP Top Ten","url":"https://owasp.org/www-project-top-ten/"},{"type":"video","title":"Vidéos sur le OWASP Top 10","url":"https://www.youtube.com/results?search_query=OWASP+top+10+expliqu%C3%A9"}]')
 ;
 
 -- Culture métiers du numérique
-INSERT INTO questions (category_id, difficulty, prompt, rubric) VALUES
+INSERT INTO questions (category_id, difficulty, prompt, rubric, hint, resources) VALUES
   ((SELECT id FROM categories WHERE slug='culture-num'), 1,
    'Quelle est la différence entre UX et UI ?',
-   '["UX = expérience globale, parcours, utilité, facilité d''usage", "UI = interface visuelle, composants, esthétique", "les deux sont complémentaires"]'),
+   '["UX = expérience globale, parcours, utilité, facilité d''usage", "UI = interface visuelle, composants, esthétique", "les deux sont complémentaires"]',
+   'L''un se juge à l''usage, l''autre se voit à l''écran.',
+   '[{"type":"article","title":"Expérience utilisateur — Wikipédia","url":"https://fr.wikipedia.org/wiki/Exp%C3%A9rience_utilisateur"},{"type":"video","title":"Vidéos sur UX vs UI","url":"https://www.youtube.com/results?search_query=UX+vs+UI+diff%C3%A9rence"}]'),
   ((SELECT id FROM categories WHERE slug='culture-num'), 1,
    'Qu''est-ce que la transformation digitale pour une entreprise ?',
-   '["intégration du numérique dans les processus/métiers", "impact sur l''organisation, pas seulement la technologie", "exemple concret"]'),
+   '["intégration du numérique dans les processus/métiers", "impact sur l''organisation, pas seulement la technologie", "exemple concret"]',
+   'Ne réduisez pas ça à « utiliser des outils numériques » — quel est l''impact sur l''organisation elle-même ?',
+   '[{"type":"article","title":"Transformation numérique — Wikipédia","url":"https://fr.wikipedia.org/wiki/Transformation_num%C3%A9rique"},{"type":"video","title":"Vidéos sur la transformation digitale","url":"https://www.youtube.com/results?search_query=transformation+digitale+entreprise+expliqu%C3%A9e"}]'),
   ((SELECT id FROM categories WHERE slug='culture-num'), 2,
    'Quel est le rôle d''un product owner par rapport à un chef de projet ?',
-   '["product owner = vision produit, priorisation valeur métier", "chef de projet = pilotage delivery, ressources, délais", "peuvent se recouvrir selon les organisations"]'),
+   '["product owner = vision produit, priorisation valeur métier", "chef de projet = pilotage delivery, ressources, délais", "peuvent se recouvrir selon les organisations"]',
+   'L''un porte le « quoi et pourquoi », l''autre le « comment et quand ».',
+   '[{"type":"article","title":"What is a Product Owner? — Scrum.org","url":"https://www.scrum.org/resources/what-is-a-product-owner"},{"type":"video","title":"Vidéos sur product owner vs chef de projet","url":"https://www.youtube.com/results?search_query=product+owner+vs+chef+de+projet"}]'),
   ((SELECT id FROM categories WHERE slug='culture-num'), 2,
    'Pourquoi la donnée est-elle considérée comme un actif stratégique pour une entreprise numérique ?',
-   '["aide à la décision (data-driven)", "personnalisation de l''expérience utilisateur", "risques associés (RGPD, sécurité, qualité de la donnée)"]'),
+   '["aide à la décision (data-driven)", "personnalisation de l''expérience utilisateur", "risques associés (RGPD, sécurité, qualité de la donnée)"]',
+   'Pensez à la fois aux bénéfices (décision, personnalisation) et aux risques associés à cette donnée.',
+   '[{"type":"article","title":"Donnée personnelle — CNIL","url":"https://www.cnil.fr/fr/definition/donnee-personnelle"},{"type":"video","title":"Vidéos sur la donnée comme actif stratégique","url":"https://www.youtube.com/results?search_query=la+donn%C3%A9e+actif+strat%C3%A9gique+entreprise"}]'),
   ((SELECT id FROM categories WHERE slug='culture-num'), 3,
    'Comment un DSI ou un CTO doit-il arbitrer entre innovation technologique et stabilité du système d''information ?',
-   '["évalue le risque business d''une dette technique non maîtrisée", "propose une approche progressive (POC, feature flags, déploiement graduel)", "aligne la décision sur la stratégie de l''entreprise, pas seulement la technique"]'),
+   '["évalue le risque business d''une dette technique non maîtrisée", "propose une approche progressive (POC, feature flags, déploiement graduel)", "aligne la décision sur la stratégie de l''entreprise, pas seulement la technique"]',
+   'Une innovation non maîtrisée peut devenir une dette ou un risque business — comment avancer par étapes plutôt qu''en un seul saut ?',
+   '[{"type":"article","title":"Is High Quality Software Worth the Cost? — Martin Fowler","url":"https://martinfowler.com/articles/is-quality-worth-cost.html"},{"type":"video","title":"Vidéos sur l''arbitrage innovation vs stabilité SI","url":"https://www.youtube.com/results?search_query=DSI+arbitrage+innovation+stabilit%C3%A9+syst%C3%A8me+information"}]'),
   ((SELECT id FROM categories WHERE slug='culture-num'), 3,
    'Quels enjeux éthiques faut-il considérer lors du déploiement d''un système d''IA générative auprès du grand public ?',
-   '["biais et équité", "transparence sur les limites du système (hallucinations)", "protection des données personnelles", "responsabilité en cas d''erreur du système"]')
+   '["biais et équité", "transparence sur les limites du système (hallucinations)", "protection des données personnelles", "responsabilité en cas d''erreur du système"]',
+   'Pensez biais, transparence sur les limites du système, données personnelles, et responsabilité en cas d''erreur.',
+   '[{"type":"article","title":"Intelligence artificielle — CNIL","url":"https://www.cnil.fr/fr/intelligence-artificielle"},{"type":"video","title":"Vidéos sur l''éthique de l''IA générative","url":"https://www.youtube.com/results?search_query=%C3%A9thique+de+l%27IA+g%C3%A9n%C3%A9rative"}]')
 ;

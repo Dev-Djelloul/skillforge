@@ -12,6 +12,8 @@ CREATE TABLE IF NOT EXISTS questions (
   difficulty INTEGER NOT NULL CHECK (difficulty BETWEEN 1 AND 3),
   prompt TEXT NOT NULL,
   rubric TEXT NOT NULL, -- JSON: points clés attendus dans une bonne réponse
+  hint TEXT, -- indice affiché à la demande pendant la question, sans révéler la réponse
+  resources TEXT, -- JSON: [{ "type": "article" | "video", "title": string, "url": string }]
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 

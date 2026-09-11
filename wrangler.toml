@@ -9,7 +9,7 @@ binding = "AI"
 [[d1_databases]]
 binding = "DB"
 database_name = "skillforge-db"
-database_id = "REPLACE_WITH_D1_DATABASE_ID"
+database_id = "6a2e2809-912a-4c60-ba91-1e0bbbb639de"
 
 # V2 : banque de questions vectorisée pour la sélection adaptative
 # [[vectorize]]
