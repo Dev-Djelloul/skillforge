@@ -87,7 +87,7 @@ function renderGlossaryPanel(prompt: string, categorySlug: string): string {
   if (terms.length === 0) {
     return `
       <aside class="glossary-panel">
-        <div class="glossary-title">📖 Lexique</div>
+        <div class="glossary-title">Lexique</div>
         <p class="glossary-empty">Aucun terme référencé pour cette question.</p>
       </aside>
     `;
@@ -95,7 +95,7 @@ function renderGlossaryPanel(prompt: string, categorySlug: string): string {
 
   return `
     <aside class="glossary-panel">
-      <div class="glossary-title">📖 Lexique</div>
+      <div class="glossary-title">Lexique</div>
       <dl class="glossary-list">
         ${terms
           .map(

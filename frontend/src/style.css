@@ -212,9 +212,9 @@ textarea:focus-visible {
 
 .question-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 280px;
+  grid-template-columns: minmax(0, 1fr) 300px;
   gap: 24px;
-  align-items: start;
+  align-items: stretch;
   margin: 24px 0;
 }
 
@@ -234,8 +234,9 @@ textarea:focus-visible {
 .glossary-panel {
   position: sticky;
   top: 24px;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
+  height: calc(100vh - 48px);
+  overflow-y: auto;
+  background: var(--color-primary);
   border-radius: 16px;
   padding: 20px;
   display: flex;
@@ -243,19 +244,20 @@ textarea:focus-visible {
   gap: 14px;
 }
 @media (max-width: 760px) {
-  .glossary-panel { position: static; }
+  .glossary-panel { position: static; height: auto; max-height: 60vh; }
 }
 
 .glossary-title {
   font-family: var(--font-display);
   font-size: 14px;
   font-weight: 700;
+  color: #FFFFFF;
 }
 
 .glossary-empty {
   margin: 0;
   font-size: 12px;
-  color: var(--color-text-muted);
+  color: rgba(255, 255, 255, 0.75);
 }
 
 .glossary-list {
@@ -268,13 +270,13 @@ textarea:focus-visible {
 .glossary-entry dt {
   font-size: 13px;
   font-weight: 600;
-  color: var(--color-primary);
+  color: var(--color-accent);
 }
 .glossary-entry dd {
   margin: 4px 0 0;
   font-size: 12px;
   line-height: 1.5;
-  color: var(--color-text-muted);
+  color: rgba(255, 255, 255, 0.85);
 }
 .question-block h2 {
   font-family: var(--font-display);
