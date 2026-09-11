@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import type { Bindings, Question, SessionItem } from './types';
+import type { Bindings, Question, Resource, SessionItem } from './types';
 import { evaluateAnswer } from './lib/evaluator';
 import { generateRevisionPlan, type CategoryBreakdown } from './lib/planner';
 
@@ -50,13 +50,29 @@ app.post('/api/sessions', async (c) => {
   });
 });
 
+// Révèle l'indice d'une question, à la demande (jamais renvoyé avec la liste
+// de questions de la session pour ne pas biaiser la réponse spontanée).
+app.get('/api/questions/:id/hint', async (c) => {
+  const questionId = c.req.param('id');
+
+  const question = await c.env.DB.prepare(`SELECT hint FROM questions WHERE id = ?`)
+    .bind(questionId)
+    .first<{ hint: string | null }>();
+
+  if (!question) {
+    return c.json({ error: 'Question introuvable' }, 404);
+  }
+
+  return c.json({ hint: question.hint ?? null });
+});
+
 // Soumet une réponse à une question de la session et déclenche l'évaluation LLM-as-judge
 app.post('/api/sessions/:id/answer', async (c) => {
   const sessionId = c.req.param('id');
   const body = await c.req.json<{ question_id: number; answer: string }>();
 
   const question = await c.env.DB.prepare(
-    `SELECT id, category_id, difficulty, prompt, rubric FROM questions WHERE id = ?`
+    `SELECT id, category_id, difficulty, prompt, rubric, hint, resources FROM questions WHERE id = ?`
   )
     .bind(body.question_id)
     .first<Question>();
@@ -75,7 +91,9 @@ app.post('/api/sessions/:id/answer', async (c) => {
     .bind(body.answer, evaluation.score, evaluation.feedback, sessionId, body.question_id)
     .run();
 
-  return c.json({ evaluation });
+  const resources: Resource[] = question.resources ? JSON.parse(question.resources) : [];
+
+  return c.json({ evaluation, resources });
 });
 
 // Clôture la session et génère le plan de révision personnalisé
@@ -121,16 +139,21 @@ app.get('/api/sessions/:id', async (c) => {
   }
 
   const items = await c.env.DB.prepare(
-    `SELECT si.*, q.prompt, q.difficulty
+    `SELECT si.*, q.prompt, q.difficulty, q.hint, q.resources
      FROM session_items si
      JOIN questions q ON q.id = si.question_id
      WHERE si.session_id = ?
      ORDER BY si.position`
   )
     .bind(sessionId)
-    .all<SessionItem & { prompt: string; difficulty: number }>();
+    .all<SessionItem & { prompt: string; difficulty: number; hint: string | null; resources: string | null }>();
 
-  return c.json({ session, items: items.results });
+  const itemsWithParsedResources = items.results.map((item) => ({
+    ...item,
+    resources: item.resources ? (JSON.parse(item.resources) as Resource[]) : [],
+  }));
+
+  return c.json({ session, items: itemsWithParsedResources });
 });
 
 export default app;

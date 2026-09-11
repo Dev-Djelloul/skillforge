@@ -9,6 +9,14 @@ export interface Question {
   difficulty: number;
   prompt: string;
   rubric: string; // JSON stringifié : string[]
+  hint: string | null;
+  resources: string | null; // JSON stringifié : Resource[]
+}
+
+export interface Resource {
+  type: 'article' | 'video';
+  title: string;
+  url: string;
 }
 
 export interface SessionItem {
