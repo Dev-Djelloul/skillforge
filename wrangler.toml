@@ -1,0 +1,22 @@
+name = "skillforge"
+main = "src/index.ts"
+compatibility_date = "2024-09-25"
+compatibility_flags = ["nodejs_compat"]
+
+[ai]
+binding = "AI"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "skillforge-db"
+database_id = "REPLACE_WITH_D1_DATABASE_ID"
+
+# V2 : banque de questions vectorisée pour la sélection adaptative
+# [[vectorize]]
+# binding = "QUESTIONS_INDEX"
+# index_name = "skillforge-questions"
+
+# V3 : stockage des transcripts audio et exports PDF
+# [[r2_buckets]]
+# binding = "ASSETS"
+# bucket_name = "skillforge-assets"
