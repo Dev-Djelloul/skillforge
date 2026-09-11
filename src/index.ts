@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { cors } from 'hono/cors';
 import type { Bindings, Question, Resource, SessionItem } from './types';
 import { evaluateAnswer } from './lib/evaluator';
 import { generateRevisionPlan, type CategoryBreakdown } from './lib/planner';
@@ -6,6 +7,9 @@ import { generateRevisionPlan, type CategoryBreakdown } from './lib/planner';
 const app = new Hono<{ Bindings: Bindings }>();
 
 const QUESTIONS_PER_SESSION = 6;
+
+// Le frontend (Cloudflare Pages) est servi sur un domaine distinct du Worker.
+app.use('/api/*', cors());
 
 app.get('/', (c) => c.json({ name: 'SkillForge API', status: 'ok' }));
 
