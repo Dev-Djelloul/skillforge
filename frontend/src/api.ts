@@ -6,6 +6,7 @@ export interface SessionQuestion {
   question_id: number;
   prompt: string;
   difficulty: number;
+  category_slug: string;
 }
 
 export interface StartSessionResponse {

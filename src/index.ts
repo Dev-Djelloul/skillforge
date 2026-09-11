@@ -20,13 +20,14 @@ app.post('/api/sessions', async (c) => {
   const sessionId = crypto.randomUUID();
 
   const questions = await c.env.DB.prepare(
-    `SELECT id, category_id, difficulty, prompt, rubric
-     FROM questions
+    `SELECT q.id, q.category_id, q.difficulty, q.prompt, q.rubric, cat.slug AS category_slug
+     FROM questions q
+     JOIN categories cat ON cat.id = q.category_id
      ORDER BY RANDOM()
      LIMIT ?`
   )
     .bind(QUESTIONS_PER_SESSION)
-    .all<Question>();
+    .all<Question & { category_slug: string }>();
 
   if (!questions.results.length) {
     return c.json({ error: 'Aucune question disponible — la base a-t-elle été seedée ?' }, 500);
@@ -50,6 +51,7 @@ app.post('/api/sessions', async (c) => {
       question_id: q.id,
       prompt: q.prompt,
       difficulty: q.difficulty,
+      category_slug: q.category_slug,
     })),
   });
 });

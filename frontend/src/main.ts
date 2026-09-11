@@ -7,6 +7,7 @@ import {
   type AnswerResponse,
   type CompleteSessionResponse,
 } from './api';
+import { findRelevantTerms } from './glossary';
 
 const LOGO_SVG = `<svg width="26" height="26" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
   <rect x="10" y="42" width="30" height="10" rx="2" fill="currentColor"/>
@@ -81,6 +82,36 @@ function renderStart(): string {
   `;
 }
 
+function renderGlossaryPanel(prompt: string, categorySlug: string): string {
+  const terms = findRelevantTerms(prompt, categorySlug);
+  if (terms.length === 0) {
+    return `
+      <aside class="glossary-panel">
+        <div class="glossary-title">📖 Lexique</div>
+        <p class="glossary-empty">Aucun terme référencé pour cette question.</p>
+      </aside>
+    `;
+  }
+
+  return `
+    <aside class="glossary-panel">
+      <div class="glossary-title">📖 Lexique</div>
+      <dl class="glossary-list">
+        ${terms
+          .map(
+            (t) => `
+              <div class="glossary-entry">
+                <dt>${escapeHtml(t.term)}</dt>
+                <dd>${escapeHtml(t.definition)}</dd>
+              </div>
+            `
+          )
+          .join('')}
+      </dl>
+    </aside>
+  `;
+}
+
 function renderQuestion(): string {
   const session = state.session!;
   const q = session.questions[state.currentIndex];
@@ -94,28 +125,32 @@ function renderQuestion(): string {
     </div>
     <div class="progress-bar"><div style="width:${progress}%"></div></div>
 
-    <div class="question-block">
-      <div class="question-meta">${difficultyBadge(q.difficulty)}</div>
-      <h2>${escapeHtml(q.prompt)}</h2>
+    <div class="question-layout">
+      <div class="question-block">
+        <div class="question-meta">${difficultyBadge(q.difficulty)}</div>
+        <h2>${escapeHtml(q.prompt)}</h2>
 
-      ${
-        state.hint
-          ? `<div class="hint-box">💡 ${escapeHtml(state.hint)}</div>`
-          : `<button class="hint-toggle" id="hint-btn" ${state.hintLoading ? 'disabled' : ''}>
-              ${state.hintLoading ? 'Chargement de l’indice…' : 'Afficher un indice'}
-            </button>`
-      }
+        ${
+          state.hint
+            ? `<div class="hint-box">💡 ${escapeHtml(state.hint)}</div>`
+            : `<button class="hint-toggle" id="hint-btn" ${state.hintLoading ? 'disabled' : ''}>
+                ${state.hintLoading ? 'Chargement de l’indice…' : 'Afficher un indice'}
+              </button>`
+        }
 
-      <textarea id="answer-input" placeholder="Rédigez votre réponse ici — vous pouvez utiliser la méthode STAR pour structurer votre réponse..."></textarea>
+        <textarea id="answer-input" placeholder="Rédigez votre réponse ici — vous pouvez utiliser la méthode STAR pour structurer votre réponse..."></textarea>
 
-      ${state.errorMessage ? `<div class="error-box">${escapeHtml(state.errorMessage)}</div>` : ''}
+        ${state.errorMessage ? `<div class="error-box">${escapeHtml(state.errorMessage)}</div>` : ''}
 
-      <div class="actions-row">
-        <span></span>
-        <button class="btn-primary" id="submit-btn" ${state.busy ? 'disabled' : ''}>
-          ${state.busy ? 'Évaluation en cours…' : 'Valider la réponse'}
-        </button>
+        <div class="actions-row">
+          <span></span>
+          <button class="btn-primary" id="submit-btn" ${state.busy ? 'disabled' : ''}>
+            ${state.busy ? 'Évaluation en cours…' : 'Valider la réponse'}
+          </button>
+        </div>
       </div>
+
+      ${renderGlossaryPanel(q.prompt, q.category_slug)}
     </div>
   `;
 }

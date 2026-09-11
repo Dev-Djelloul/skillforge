@@ -52,6 +52,10 @@ body {
   padding: 24px 20px 64px;
 }
 
+body:has(.question-layout) #app {
+  max-width: 1160px;
+}
+
 a { color: var(--color-primary); }
 a:hover { color: var(--color-primary-hover); }
 
@@ -206,11 +210,71 @@ textarea:focus-visible {
   border-color: var(--color-primary);
 }
 
+.question-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: 24px;
+  align-items: start;
+  margin: 24px 0;
+}
+
+@media (max-width: 760px) {
+  .question-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
 .question-block {
   display: flex;
   flex-direction: column;
   gap: 18px;
-  margin: 24px 0;
+  margin: 0;
+}
+
+.glossary-panel {
+  position: sticky;
+  top: 24px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+@media (max-width: 760px) {
+  .glossary-panel { position: static; }
+}
+
+.glossary-title {
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.glossary-empty {
+  margin: 0;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.glossary-list {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.glossary-entry dt {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-primary);
+}
+.glossary-entry dd {
+  margin: 4px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--color-text-muted);
 }
 .question-block h2 {
   font-family: var(--font-display);
