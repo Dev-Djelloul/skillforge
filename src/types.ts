@@ -49,10 +49,3 @@ export interface Evaluation {
   points_manquants: string[];
   follow_up_question: string | null;
 }
-
-export interface SkillScore {
-  user_id: string;
-  category_id: number;
-  avg_score: number;
-  attempts: number;
-}

@@ -1,6 +1,7 @@
-import type { Bindings, Question, SkillScore } from '../types';
+import type { Bindings, Question } from '../types';
 import { embedText } from './embeddings';
 import { generateAndStoreQuestion } from './question-generator';
+import { computeSkillScores, type CategoryScore } from './skill-scores';
 
 export interface CategoryRow {
   id: number;
@@ -23,13 +24,13 @@ const AI_GENERATED_SLOTS = new Set([0, 1, 2, 3, 4, 5]);
  * catégorie est favorisée. Une catégorie jamais pratiquée reçoit un poids
  * neutre (ni évitée, ni sur-représentée) pour continuer à explorer.
  */
-function categoryWeight(score: SkillScore | undefined): number {
+function categoryWeight(score: CategoryScore | undefined): number {
   if (!score || score.attempts === 0) return 2;
   return Math.max(1, Math.round((100 - score.avg_score) / 20) + 1);
 }
 
 /** Difficulté ciblée en fonction du niveau observé sur la catégorie. */
-function targetDifficulty(score: SkillScore | undefined): number {
+function targetDifficulty(score: CategoryScore | undefined): number {
   if (!score || score.attempts === 0) return 1 + Math.round(Math.random());
   if (score.avg_score < 50) return 1;
   if (score.avg_score < 75) return 2;
@@ -166,11 +167,7 @@ export async function selectAdaptiveQuestions(
   candidateContext?: string
 ): Promise<SelectedQuestion[]> {
   const questionsPerSession = full ? QUESTIONS_PER_FULL_SESSION : QUESTIONS_PER_SESSION;
-  const scores = userId
-    ? (
-        await env.DB.prepare(`SELECT * FROM skill_scores WHERE user_id = ?`).bind(userId).all<SkillScore>()
-      ).results
-    : [];
+  const scores = userId ? await computeSkillScores(env.DB, userId) : [];
   const scoreByCategory = new Map(scores.map((s) => [s.category_id, s]));
 
   // Choix de la catégorie/difficulté de chaque slot d'abord (rapide, pas

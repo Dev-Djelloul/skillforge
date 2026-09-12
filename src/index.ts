@@ -195,32 +195,10 @@ app.post('/api/sessions/:id/answer', async (c) => {
     .bind(body.answer, evaluation.score, evaluation.feedback, sessionId, body.question_id)
     .run();
 
-  // Met à jour la moyenne glissante par catégorie, utilisée par la sélection
-  // adaptative des prochaines sessions du même client_id.
-  const session = await c.env.DB.prepare(`SELECT user_id FROM sessions WHERE id = ?`)
-    .bind(sessionId)
-    .first<{ user_id: string | null }>();
-
-  if (session?.user_id) {
-    const existing = await c.env.DB.prepare(
-      `SELECT avg_score, attempts FROM skill_scores WHERE user_id = ? AND category_id = ?`
-    )
-      .bind(session.user_id, question.category_id)
-      .first<{ avg_score: number; attempts: number }>();
-
-    const attempts = (existing?.attempts ?? 0) + 1;
-    const avgScore = existing
-      ? (existing.avg_score * existing.attempts + evaluation.score) / attempts
-      : evaluation.score;
-
-    await c.env.DB.prepare(
-      `INSERT INTO skill_scores (user_id, category_id, avg_score, attempts)
-       VALUES (?, ?, ?, ?)
-       ON CONFLICT (user_id, category_id) DO UPDATE SET avg_score = excluded.avg_score, attempts = excluded.attempts`
-    )
-      .bind(session.user_id, question.category_id, avgScore, attempts)
-      .run();
-  }
+  // Le score par catégorie (skill_scores) n'est plus maintenu en écriture ici :
+  // il est désormais recalculé à la volée à partir des sessions existantes
+  // (voir lib/skill-scores.ts), pour rester cohérent même après suppression
+  // d'une session par l'utilisateur.
 
   const resources: Resource[] = question.resources ? JSON.parse(question.resources) : [];
 
@@ -342,15 +320,20 @@ app.delete('/api/sessions/:id', async (c) => {
 });
 
 // Progression d'un client_id (utilisateur anonyme mais persistant côté
-// navigateur) par catégorie — sert de base à un futur écran de progression.
+// navigateur) par catégorie — recalculée à la volée à partir des sessions
+// existantes (voir lib/skill-scores.ts), pour rester cohérente même après
+// suppression d'une session dans l'historique.
 app.get('/api/progress/:client_id', async (c) => {
   const clientId = c.req.param('client_id');
 
   const scores = await c.env.DB.prepare(
-    `SELECT cat.slug AS category_slug, cat.label AS category_label, s.avg_score, s.attempts
-     FROM skill_scores s
-     JOIN categories cat ON cat.id = s.category_id
-     WHERE s.user_id = ?
+    `SELECT cat.slug AS category_slug, cat.label AS category_label, AVG(si.score) AS avg_score, COUNT(*) AS attempts
+     FROM session_items si
+     JOIN sessions s ON s.id = si.session_id
+     JOIN questions q ON q.id = si.question_id
+     JOIN categories cat ON cat.id = q.category_id
+     WHERE s.user_id = ? AND si.score IS NOT NULL
+     GROUP BY cat.id
      ORDER BY cat.id`
   )
     .bind(clientId)
