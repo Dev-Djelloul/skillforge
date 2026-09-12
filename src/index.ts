@@ -356,7 +356,24 @@ app.get('/api/progress/:client_id', async (c) => {
     .bind(clientId)
     .all<{ category_slug: string; category_label: string; avg_score: number; attempts: number }>();
 
-  return c.json({ client_id: clientId, categories: scores.results });
+  // Compteurs de régularité : sert de repère d'usage sur l'écran "Mes
+  // progrès", au-delà du seul score (une pratique régulière a de la valeur
+  // en soi, même quand le score progresse lentement).
+  const counts = await c.env.DB.prepare(
+    `SELECT COUNT(*) AS total,
+            SUM(CASE WHEN started_at >= datetime('now', '-30 days') THEN 1 ELSE 0 END) AS last_30_days
+     FROM sessions
+     WHERE user_id = ?`
+  )
+    .bind(clientId)
+    .first<{ total: number; last_30_days: number }>();
+
+  return c.json({
+    client_id: clientId,
+    categories: scores.results,
+    total_sessions: counts?.total ?? 0,
+    sessions_last_30_days: counts?.last_30_days ?? 0,
+  });
 });
 
 // Évolution du score moyen par catégorie, session après session — sert de

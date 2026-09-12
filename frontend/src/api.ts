@@ -148,6 +148,8 @@ export interface ProgressCategory {
 export interface ProgressResponse {
   client_id: string;
   categories: ProgressCategory[];
+  total_sessions: number;
+  sessions_last_30_days: number;
 }
 
 export function getProgress(): Promise<ProgressResponse> {

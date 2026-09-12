@@ -733,9 +733,25 @@ function renderTimelineChart(): string {
   `;
 }
 
+function scoreColor(pct: number): string {
+  return pct >= 75 ? 'var(--color-level-1)' : pct >= 50 ? 'var(--color-level-2)' : 'var(--color-level-3)';
+}
+
 function renderProgress(): string {
   const data = state.progressData;
   const categories = data?.categories ?? [];
+  const practiced = categories.filter((c) => c.attempts > 0);
+
+  const globalScore =
+    practiced.length > 0 ? Math.round(practiced.reduce((sum, c) => sum + c.avg_score, 0) / practiced.length) : null;
+
+  const weakest =
+    practiced.length > 1
+      ? practiced.reduce((worst, c) => (c.avg_score < worst.avg_score ? c : worst), practiced[0])
+      : null;
+
+  const totalSessions = data?.total_sessions ?? 0;
+  const last30 = data?.sessions_last_30_days ?? 0;
 
   return `
     ${topBar()}
@@ -747,26 +763,56 @@ function renderProgress(): string {
     ${
       categories.length === 0
         ? `<div class="card"><p style="margin:0; font-size:14px; color:var(--color-text-muted);">Aucune donnée pour l'instant — termine une première session pour voir apparaître ta progression ici.</p></div>`
-        : `<div class="card" style="display:flex; flex-direction:column; gap:18px;">
+        : `
+          <div class="progress-stats-row">
+            ${
+              globalScore !== null
+                ? `<div class="card progress-stat">
+                    <span class="progress-stat-label">Score global</span>
+                    <span class="progress-stat-value" style="color:${scoreColor(globalScore)};">${globalScore}%</span>
+                  </div>`
+                : ''
+            }
+            <div class="card progress-stat">
+              <span class="progress-stat-label">Sessions au total</span>
+              <span class="progress-stat-value">${totalSessions}</span>
+            </div>
+            <div class="card progress-stat">
+              <span class="progress-stat-label">Sur les 30 derniers jours</span>
+              <span class="progress-stat-value">${last30}</span>
+            </div>
+          </div>
+
+          ${
+            weakest
+              ? `<div class="card" style="margin-top:16px; border-color:var(--color-primary);">
+                  <p style="margin:0; font-size:13.5px; color:var(--color-text-muted);">
+                    🎯 Concentre-toi sur <strong style="color:var(--color-text);">${escapeHtml(weakest.category_label)}</strong> pour ta prochaine session — c'est ta famille la moins consolidée pour l'instant (${Math.round(weakest.avg_score)}%).
+                  </p>
+                </div>`
+              : ''
+          }
+
+          <div class="card" style="margin-top:16px; display:flex; flex-direction:column; gap:18px;">
             ${categories
               .map((c) => {
                 const pct = Math.round(c.avg_score);
-                const color = pct >= 75 ? 'var(--color-level-1)' : pct >= 50 ? 'var(--color-level-2)' : 'var(--color-level-3)';
                 return `
                   <div class="breakdown-row">
                     <div class="labels">
                       <span>${escapeHtml(c.category_label)}</span>
                       <span>${pct}% · ${c.attempts} question${c.attempts > 1 ? 's' : ''}</span>
                     </div>
-                    <div class="mini-bar"><div style="width:${pct}%; background:${color};"></div></div>
+                    <div class="mini-bar"><div style="width:${pct}%; background:${scoreColor(pct)};"></div></div>
                   </div>
                 `;
               })
               .join('')}
-          </div>`
-    }
+          </div>
 
-    ${renderTimelineChart()}
+          ${renderTimelineChart()}
+        `
+    }
 
     <div class="actions-row" style="margin-top:24px;">
       <span></span>

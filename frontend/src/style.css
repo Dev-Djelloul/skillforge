@@ -704,6 +704,31 @@ textarea:focus-visible {
 }
 .results-summary .value { font-family: var(--font-display); font-size: 56px; font-weight: 700; color: var(--color-accent); }
 
+.progress-stats-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+}
+.progress-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 18px 20px;
+}
+.progress-stat-label {
+  font-size: 12px;
+  color: var(--color-text-subtle);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 600;
+}
+.progress-stat-value {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
 .breakdown-row {
   display: flex;
   flex-direction: column;
