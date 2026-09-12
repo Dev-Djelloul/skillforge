@@ -9,6 +9,7 @@ export interface CategoryRow {
 }
 
 const QUESTIONS_PER_SESSION = 6;
+const QUESTIONS_PER_FULL_SESSION = 12;
 
 // Toutes les questions sont générées fraîchement par l'IA plutôt que tirées
 // de la banque existante — elles y sont aussitôt ajoutées, donc la banque
@@ -155,8 +156,10 @@ export async function selectAdaptiveQuestions(
   env: Bindings,
   categories: CategoryRow[],
   userId: string | null,
-  forcedDifficulty?: number
+  forcedDifficulty?: number,
+  full = false
 ): Promise<number[]> {
+  const questionsPerSession = full ? QUESTIONS_PER_FULL_SESSION : QUESTIONS_PER_SESSION;
   const scores = userId
     ? (
         await env.DB.prepare(`SELECT * FROM skill_scores WHERE user_id = ?`).bind(userId).all<SkillScore>()
@@ -167,7 +170,7 @@ export async function selectAdaptiveQuestions(
   const selected: number[] = [];
   const excludeIds = new Set<number>();
 
-  for (let i = 0; i < QUESTIONS_PER_SESSION; i++) {
+  for (let i = 0; i < questionsPerSession; i++) {
     const weights = categories.map((cat) => categoryWeight(scoreByCategory.get(cat.id)));
     const category = weightedPick(categories, weights);
     const score = scoreByCategory.get(category.id);

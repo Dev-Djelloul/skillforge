@@ -80,6 +80,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 export interface SessionSetup {
   categorySlugs: string[]; // vide = toutes les familles
   difficulty: number | null; // null = adaptatif
+  full?: boolean; // mode "entretien complet" : 12 questions, toutes familles
 }
 
 export function startSession(setup?: SessionSetup): Promise<StartSessionResponse> {
@@ -89,6 +90,7 @@ export function startSession(setup?: SessionSetup): Promise<StartSessionResponse
       client_id: getClientId(),
       category_slugs: setup && setup.categorySlugs.length > 0 ? setup.categorySlugs : undefined,
       difficulty: setup?.difficulty ?? undefined,
+      full: setup?.full ?? undefined,
     }),
   });
 }
@@ -156,6 +158,22 @@ export interface HistoryResponse {
 
 export function getHistory(): Promise<HistoryResponse> {
   return request(`/api/history/${getClientId()}`);
+}
+
+export interface TimelinePoint {
+  started_at: string;
+  category_slug: string;
+  category_label: string;
+  avg_score: number;
+}
+
+export interface TimelineResponse {
+  client_id: string;
+  points: TimelinePoint[];
+}
+
+export function getProgressTimeline(): Promise<TimelineResponse> {
+  return request(`/api/progress/${getClientId()}/timeline`);
 }
 
 export interface SessionDetailItem {

@@ -7,12 +7,14 @@ import {
   getProgress,
   getHistory,
   getSessionDetail,
+  getProgressTimeline,
   type StartSessionResponse,
   type AnswerResponse,
   type CompleteSessionResponse,
   type ProgressResponse,
   type HistoryResponse,
   type SessionDetailResponse,
+  type TimelineResponse,
   type Resource,
   type SessionSetup,
 } from './api';
@@ -53,14 +55,18 @@ interface AppState {
   errorMessage: string | null;
   busy: boolean;
   progressData: ProgressResponse | null;
+  timelineData: TimelineResponse | null;
   historyData: HistoryResponse | null;
   sessionDetail: SessionDetailResponse | null;
   setupCategories: Set<string>;
   setupDifficulty: number | null;
+  setupFull: boolean;
   timeRemaining: number;
   followUpAnswered: boolean;
   followUpFeedback: string | null;
   followUpBusy: boolean;
+  shareMessage: string | null;
+  sharedView: boolean;
 }
 
 const state: AppState = {
@@ -74,14 +80,18 @@ const state: AppState = {
   errorMessage: null,
   busy: false,
   progressData: null,
+  timelineData: null,
   historyData: null,
   sessionDetail: null,
   setupCategories: new Set(CATEGORIES.map((c) => c.slug)),
   setupDifficulty: null,
+  setupFull: false,
   timeRemaining: 0,
   followUpAnswered: false,
   followUpFeedback: null,
   followUpBusy: false,
+  shareMessage: null,
+  sharedView: false,
 };
 
 let timerHandle: ReturnType<typeof setInterval> | null = null;
@@ -127,6 +137,7 @@ function topBar(showNav = true): string {
           ? `<nav class="top-nav">
               <button class="nav-link" id="nav-progress-btn">Mes progrès</button>
               <button class="nav-link" id="nav-history-btn">Historique</button>
+              <a class="nav-link" href="https://news.ycombinator.com/" target="_blank" rel="noopener noreferrer">Actus tech</a>
             </nav>`
           : ''
       }
@@ -164,13 +175,13 @@ function renderSetup(): string {
       <p>Choisis les familles à pratiquer et le niveau de difficulté — ou laisse la sélection adaptative faire le tri pour toi.</p>
     </div>
 
-    <div class="card" style="display:flex; flex-direction:column; gap:14px;">
+    <div class="card" style="display:flex; flex-direction:column; gap:14px; ${state.setupFull ? 'opacity:0.5;' : ''}">
       <strong style="font-size:13px;">Familles de questions</strong>
       <div class="setup-categories">
         ${CATEGORIES.map(
           (c) => `
             <label class="setup-checkbox">
-              <input type="checkbox" data-category="${escapeAttr(c.slug)}" ${state.setupCategories.has(c.slug) ? 'checked' : ''} />
+              <input type="checkbox" data-category="${escapeAttr(c.slug)}" ${state.setupCategories.has(c.slug) ? 'checked' : ''} ${state.setupFull ? 'disabled' : ''} />
               <span>${escapeHtml(c.label)}</span>
             </label>
           `
@@ -196,6 +207,16 @@ function renderSetup(): string {
           )
           .join('')}
       </div>
+    </div>
+
+    <div class="card" style="margin-top:16px; display:flex; flex-direction:column; gap:10px;">
+      <label class="setup-checkbox" style="align-items:flex-start;">
+        <input type="checkbox" id="setup-full-checkbox" ${state.setupFull ? 'checked' : ''} />
+        <span>
+          <strong style="display:block; font-size:13px;">Mode entretien complet</strong>
+          <span style="display:block; font-size:12px; color:var(--color-text-muted); margin-top:2px;">12 questions enchaînées sur toutes les familles, comme un vrai entretien technique de bout en bout (~30-45 min).</span>
+        </span>
+      </label>
     </div>
 
     ${state.errorMessage ? `<div class="error-box" style="margin-top:16px;">${escapeHtml(state.errorMessage)}</div>` : ''}
@@ -426,7 +447,10 @@ function renderResults(): string {
       <p style="margin:0; font-size:13px; line-height:1.6; color:var(--color-text-muted); white-space:pre-line;">${escapeHtml(results.revision_plan)}</p>
     </div>
 
+    ${state.shareMessage ? `<div class="hint-box no-print" style="margin-top:16px;">${escapeHtml(state.shareMessage)}</div>` : ''}
+
     <div class="actions-row" style="margin-top:24px;">
+      <button class="btn-secondary no-print" id="share-results-btn">Partager mes résultats</button>
       <button class="btn-secondary no-print" id="export-pdf-btn">Télécharger mon bilan (PDF)</button>
       <button class="btn-primary no-print" id="restart-btn">Nouvelle session</button>
     </div>
@@ -449,6 +473,55 @@ function formatDate(iso: string): string {
     hour: '2-digit',
     minute: '2-digit',
   });
+}
+
+const TIMELINE_COLORS = ['#B3401A', '#2F7DE0', '#2FA85C', '#FFB020'];
+
+function renderTimelineChart(): string {
+  const points = state.timelineData?.points ?? [];
+  if (points.length < 2) return '';
+
+  const bySlug = new Map<string, { label: string; scores: number[] }>();
+  for (const p of points) {
+    if (!bySlug.has(p.category_slug)) bySlug.set(p.category_slug, { label: p.category_label, scores: [] });
+    bySlug.get(p.category_slug)!.scores.push(p.avg_score);
+  }
+
+  const width = 560;
+  const height = 160;
+  const padding = 8;
+  const maxLen = Math.max(...[...bySlug.values()].map((c) => c.scores.length));
+  if (maxLen < 2) return '';
+
+  const lines = [...bySlug.entries()].map(([slug, c], i) => {
+    const color = TIMELINE_COLORS[i % TIMELINE_COLORS.length];
+    const stepX = c.scores.length > 1 ? (width - 2 * padding) / (c.scores.length - 1) : 0;
+    const coords = c.scores.map((score, idx) => {
+      const x = padding + idx * stepX;
+      const y = height - padding - (score / 100) * (height - 2 * padding);
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    });
+    return { slug, label: c.label, color, path: coords.join(' ') };
+  });
+
+  return `
+    <div class="card" style="margin-top:20px; display:flex; flex-direction:column; gap:12px;">
+      <strong style="font-size:14px;">Évolution du score dans le temps</strong>
+      <svg viewBox="0 0 ${width} ${height}" style="width:100%; height:auto;" preserveAspectRatio="none">
+        ${lines.map((l) => `<polyline points="${l.path}" fill="none" stroke="${l.color}" stroke-width="2" />`).join('')}
+      </svg>
+      <div style="display:flex; flex-wrap:wrap; gap:12px;">
+        ${lines
+          .map(
+            (l) =>
+              `<span style="display:flex; align-items:center; gap:6px; font-size:12px; color:var(--color-text-muted);">
+                <span style="width:10px; height:10px; border-radius:50%; background:${l.color}; display:inline-block;"></span>${escapeHtml(l.label)}
+              </span>`
+          )
+          .join('')}
+      </div>
+    </div>
+  `;
 }
 
 function renderProgress(): string {
@@ -483,6 +556,8 @@ function renderProgress(): string {
               .join('')}
           </div>`
     }
+
+    ${renderTimelineChart()}
 
     <div class="actions-row" style="margin-top:24px;">
       <span></span>
@@ -527,12 +602,16 @@ function renderHistory(): string {
 
 function renderSessionDetail(): string {
   const detail = state.sessionDetail;
-  if (!detail) return `${topBar()}<div class="loading">Chargement…</div>`;
+  if (!detail) return `${topBar(!state.sharedView)}<div class="loading">Chargement…</div>`;
 
   return `
-    ${topBar()}
+    ${topBar(!state.sharedView)}
     <div class="hero" style="padding-top:24px; padding-bottom:16px;">
-      <button class="btn-ghost" id="back-to-history-btn" style="padding:8px 16px; font-size:12px;">← Retour à l'historique</button>
+      ${
+        state.sharedView
+          ? `<div class="hint-box" style="margin-bottom:12px;">👀 Vue partagée en lecture seule — <span id="shared-cta" style="text-decoration:underline; cursor:pointer;">passe ton propre entretien</span>.</div>`
+          : `<button class="btn-ghost" id="back-to-history-btn" style="padding:8px 16px; font-size:12px;">← Retour à l'historique</button>`
+      }
       <h1 style="font-size:24px; margin-top:8px;">Session du ${formatDate(detail.session.started_at)}</h1>
     </div>
 
@@ -607,6 +686,7 @@ function attachHandlers(): void {
   document.getElementById('nav-progress-btn')?.addEventListener('click', onNavProgress);
   document.getElementById('nav-history-btn')?.addEventListener('click', onNavHistory);
   document.getElementById('back-to-history-btn')?.addEventListener('click', onNavHistory);
+  document.getElementById('shared-cta')?.addEventListener('click', onRestart);
   document.querySelectorAll<HTMLButtonElement>('.session-row').forEach((row) => {
     row.addEventListener('click', () => onViewSessionDetail(row.dataset.sessionId!));
   });
@@ -622,6 +702,11 @@ function attachHandlers(): void {
       state.setupDifficulty = input.value ? Number(input.value) : null;
     });
   });
+  document.getElementById('setup-full-checkbox')?.addEventListener('change', (e) => {
+    state.setupFull = (e.target as HTMLInputElement).checked;
+    render();
+  });
+  document.getElementById('share-results-btn')?.addEventListener('click', onShareResults);
 
   if (state.screen !== 'question') {
     stopTimer();
@@ -638,6 +723,7 @@ async function onConfirmSetup(): Promise<void> {
   const setup: SessionSetup = {
     categorySlugs: [...state.setupCategories],
     difficulty: state.setupDifficulty,
+    full: state.setupFull,
   };
 
   state.busy = true;
@@ -760,12 +846,28 @@ async function onNext(): Promise<void> {
   }
 }
 
+async function onShareResults(): Promise<void> {
+  const sessionId = state.session?.session_id;
+  if (!sessionId) return;
+
+  const shareUrl = `${window.location.origin}${window.location.pathname}?session=${sessionId}`;
+  try {
+    await navigator.clipboard.writeText(shareUrl);
+    state.shareMessage = 'Lien copié — il donne accès à cette session en lecture seule, sans compte requis.';
+  } catch {
+    state.shareMessage = `Lien à copier manuellement : ${shareUrl}`;
+  }
+  render();
+}
+
 async function onNavProgress(): Promise<void> {
   state.screen = 'progress';
   state.errorMessage = null;
   render();
   try {
-    state.progressData = await getProgress();
+    const [progress, timeline] = await Promise.all([getProgress(), getProgressTimeline()]);
+    state.progressData = progress;
+    state.timelineData = timeline;
   } catch (err) {
     state.errorMessage = err instanceof Error ? err.message : 'Impossible de charger la progression.';
   } finally {
@@ -811,9 +913,31 @@ function onRestart(): void {
   state.errorMessage = null;
   state.setupCategories = new Set(CATEGORIES.map((c) => c.slug));
   state.setupDifficulty = null;
+  state.setupFull = false;
   state.followUpAnswered = false;
   state.followUpFeedback = null;
+  state.shareMessage = null;
+  state.sharedView = false;
+  history.replaceState(null, '', window.location.pathname);
   render();
+}
+
+async function loadSharedSessionFromUrl(): Promise<boolean> {
+  const sessionId = new URLSearchParams(window.location.search).get('session');
+  if (!sessionId) return false;
+
+  state.sharedView = true;
+  state.screen = 'session-detail';
+  render();
+  try {
+    state.sessionDetail = await getSessionDetail(sessionId);
+  } catch (err) {
+    state.errorMessage = err instanceof Error ? err.message : 'Cette session partagée est introuvable.';
+    state.screen = 'error';
+  } finally {
+    render();
+  }
+  return true;
 }
 
 function escapeHtml(value: string): string {
@@ -826,4 +950,6 @@ function escapeAttr(value: string): string {
   return value.replace(/"/g, '&quot;');
 }
 
-render();
+loadSharedSessionFromUrl().then((wasShared) => {
+  if (!wasShared) render();
+});

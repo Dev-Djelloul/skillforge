@@ -28,8 +28,8 @@ app.get('/', (c) => c.json({ name: 'SkillForge API', status: 'ok' }));
 // et aléatoire entre catégories, comme en V1.
 app.post('/api/sessions', async (c) => {
   const body = await c.req
-    .json<{ client_id?: string; category_slugs?: string[]; difficulty?: number }>()
-    .catch(() => ({}) as { client_id?: string; category_slugs?: string[]; difficulty?: number });
+    .json<{ client_id?: string; category_slugs?: string[]; difficulty?: number; full?: boolean }>()
+    .catch(() => ({}) as { client_id?: string; category_slugs?: string[]; difficulty?: number; full?: boolean });
   const userId = body.client_id ?? null;
   const sessionId = crypto.randomUUID();
 
@@ -39,11 +39,16 @@ app.post('/api/sessions', async (c) => {
     return c.json({ error: 'Aucune catégorie disponible — la base a-t-elle été seedée ?' }, 500);
   }
 
+  // Mode "entretien complet" (V2) : simule un vrai entretien de bout en
+  // bout sur toutes les familles, quel que soit le filtre demandé — un
+  // entretien réel ne se limite pas aux points forts du candidat.
+  const isFull = body.full === true;
+
   // Parcours choisi par le candidat (V2) : restreint aux familles cochées,
   // repli sur toutes les familles si rien n'est précisé ou si le filtre
   // ne correspond à aucune catégorie connue.
   const categories =
-    body.category_slugs && body.category_slugs.length > 0
+    !isFull && body.category_slugs && body.category_slugs.length > 0
       ? allCategories.results.filter((cat) => body.category_slugs!.includes(cat.slug))
       : allCategories.results;
   const selectedCategories = categories.length > 0 ? categories : allCategories.results;
@@ -51,7 +56,7 @@ app.post('/api/sessions', async (c) => {
   const forcedDifficulty =
     body.difficulty && body.difficulty >= 1 && body.difficulty <= 3 ? body.difficulty : undefined;
 
-  const questionIds = await selectAdaptiveQuestions(c.env, selectedCategories, userId, forcedDifficulty);
+  const questionIds = await selectAdaptiveQuestions(c.env, selectedCategories, userId, forcedDifficulty, isFull);
 
   if (!questionIds.length) {
     return c.json({ error: 'Aucune question disponible — la base a-t-elle été seedée ?' }, 500);
@@ -272,6 +277,28 @@ app.get('/api/progress/:client_id', async (c) => {
     .all<{ category_slug: string; category_label: string; avg_score: number; attempts: number }>();
 
   return c.json({ client_id: clientId, categories: scores.results });
+});
+
+// Évolution du score moyen par catégorie, session après session — sert de
+// base au graphique de progression dans le temps (une session sans réponse
+// évaluée n'apparaît pas, elle ne fait pas progresser la moyenne).
+app.get('/api/progress/:client_id/timeline', async (c) => {
+  const clientId = c.req.param('client_id');
+
+  const rows = await c.env.DB.prepare(
+    `SELECT s.started_at, cat.slug AS category_slug, cat.label AS category_label, AVG(si.score) AS avg_score
+     FROM sessions s
+     JOIN session_items si ON si.session_id = s.id AND si.score IS NOT NULL
+     JOIN questions q ON q.id = si.question_id
+     JOIN categories cat ON cat.id = q.category_id
+     WHERE s.user_id = ?
+     GROUP BY s.id, cat.id
+     ORDER BY s.started_at ASC`
+  )
+    .bind(clientId)
+    .all<{ started_at: string; category_slug: string; category_label: string; avg_score: number }>();
+
+  return c.json({ client_id: clientId, points: rows.results });
 });
 
 // Historique des sessions d'un client_id — une session terminée n'était
