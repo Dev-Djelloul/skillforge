@@ -28,6 +28,76 @@ const CATEGORIES = [
   { slug: 'culture-num', label: 'Culture métiers du numérique' },
 ];
 
+interface FamilyInfo {
+  slug: string;
+  label: string;
+  tagline: string;
+  description: string;
+  topics: string[];
+}
+
+// Contenu du popover d'explication affiché au survol/focus des cartes de
+// famille sur la page d'accueil — donne un aperçu concret avant même de
+// démarrer une session, plutôt qu'un simple sous-titre de 3 mots.
+const FAMILIES: FamilyInfo[] = [
+  {
+    slug: 'ia-ml',
+    label: 'IA & Machine Learning',
+    tagline: 'Prompt, RAG, agents, évaluation',
+    description:
+      "Des questions sur la conception et l'usage responsable de systèmes IA en production — comme un recruteur technique ou produit IA les poserait.",
+    topics: [
+      'Prompt engineering et prompt caching',
+      'RAG (retrieval-augmented generation)',
+      'Agents et enchaînement d\'outils',
+      'Fine-tuning vs apprentissage from scratch',
+      'Évaluation de modèles (LLM-as-judge, biais, hallucinations)',
+    ],
+  },
+  {
+    slug: 'gestion-projet',
+    label: 'Gestion de projet digital',
+    tagline: 'Agilité, arbitrages, risques',
+    description:
+      "Des mises en situation de pilotage de projet digital — arbitrages, méthode, communication — typiques d'un entretien de chef de projet ou product owner.",
+    topics: [
+      'Méthodes agiles (Scrum, Kanban) et cycle en V',
+      'Priorisation et arbitrages (délai / budget / qualité)',
+      'Gestion des risques et des imprévus',
+      'Pilotage d\'équipe et parties prenantes',
+      'Indicateurs de suivi (KPI, backlog, sprint)',
+    ],
+  },
+  {
+    slug: 'dev-web',
+    label: 'Développement web',
+    tagline: 'Architecture, API, sécurité',
+    description:
+      'Des questions techniques sur la conception et la sécurisation d\'applications web modernes, front comme back.',
+    topics: [
+      'Architecture front/back (SSR, CSR, API REST)',
+      'Sécurité web (OWASP, XSS, authentification)',
+      'Performance et scalabilité',
+      'Infrastructure cloud et serverless',
+      'Bonnes pratiques de code et dette technique',
+    ],
+  },
+  {
+    slug: 'culture-num',
+    label: 'Culture métiers du numérique',
+    tagline: 'UX, produit, transformation',
+    description:
+      "Des questions plus transversales sur l'écosystème numérique — utiles pour situer un profil au-delà de la seule technique.",
+    topics: [
+      'UX/UI et expérience utilisateur',
+      'Transformation digitale en entreprise',
+      'RGPD et protection des données',
+      'Culture data-driven',
+      'Rôles et organisation (Product Owner, DSI...)',
+    ],
+  },
+];
+
 const TIME_BY_DIFFICULTY: Record<number, number> = { 1: 180, 2: 300, 3: 480 };
 
 const LOGO_SVG = `<svg width="26" height="26" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -226,6 +296,25 @@ function difficultyBadge(level: number): string {
   return `<div class="badge badge-${level}"><div class="dot"></div>${DIFFICULTY_LABEL[level] ?? 'Niveau'}</div>`;
 }
 
+function renderFamilyCard(family: FamilyInfo): string {
+  return `
+    <div class="family-card-wrap" tabindex="0">
+      <div class="card family-card">
+        ${escapeHtml(family.label)}
+        <span>${escapeHtml(family.tagline)}</span>
+      </div>
+      <div class="family-popover">
+        <strong>${escapeHtml(family.label)}</strong>
+        <p>${escapeHtml(family.description)}</p>
+        <span class="family-popover-subtitle">Ce que couvre cette famille</span>
+        <ul>
+          ${family.topics.map((t) => `<li>${escapeHtml(t)}</li>`).join('')}
+        </ul>
+      </div>
+    </div>
+  `;
+}
+
 function renderStart(): string {
   return `
     ${topBar()}
@@ -233,10 +322,7 @@ function renderStart(): string {
       <h1>Préparez votre prochain entretien technique</h1>
       <p>SkillForge simule un entretien réaliste en IA/ML, gestion de projet digital et développement web, avec un feedback immédiat pour progresser à chaque session.</p>
       <div class="families">
-        <div class="card">IA & Machine Learning<span>Prompt, RAG, agents, évaluation</span></div>
-        <div class="card">Gestion de projet digital<span>Agilité, arbitrages, risques</span></div>
-        <div class="card">Développement web<span>Architecture, API, sécurité</span></div>
-        <div class="card">Culture numérique<span>UX, produit, transformation</span></div>
+        ${FAMILIES.map(renderFamilyCard).join('')}
       </div>
       <button class="btn-primary" id="goto-setup-btn">Commencer l’entretien</button>
       ${state.errorMessage ? `<div class="error-box">${escapeHtml(state.errorMessage)}</div>` : ''}
