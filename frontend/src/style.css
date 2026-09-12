@@ -52,9 +52,6 @@ body {
   padding: 24px 20px 64px;
 }
 
-body:has(.question-layout) #app {
-  max-width: 1160px;
-}
 
 a { color: var(--color-primary); }
 a:hover { color: var(--color-primary-hover); }
@@ -211,16 +208,13 @@ textarea:focus-visible {
 }
 
 .question-layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 300px;
-  gap: 24px;
-  align-items: stretch;
   margin: 24px 0;
+  padding-right: 324px;
 }
 
 @media (max-width: 760px) {
   .question-layout {
-    grid-template-columns: 1fr;
+    padding-right: 0;
   }
 }
 
@@ -232,19 +226,28 @@ textarea:focus-visible {
 }
 
 .glossary-panel {
-  position: sticky;
-  top: 24px;
-  height: calc(100vh - 48px);
+  position: fixed;
+  top: 0;
+  right: 0;
+  height: 100vh;
+  width: 300px;
   overflow-y: auto;
   background: var(--color-primary);
-  border-radius: 16px;
-  padding: 20px;
+  border-radius: 0;
+  padding: 32px 20px;
   display: flex;
   flex-direction: column;
   gap: 14px;
+  z-index: 5;
 }
 @media (max-width: 760px) {
-  .glossary-panel { position: static; height: auto; max-height: 60vh; }
+  .glossary-panel {
+    position: static;
+    width: auto;
+    height: auto;
+    max-height: 60vh;
+    padding: 20px;
+  }
 }
 
 .glossary-title {

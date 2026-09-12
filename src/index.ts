@@ -11,6 +11,13 @@ const app = new Hono<{ Bindings: Bindings }>();
 // Le frontend (Cloudflare Pages) est servi sur un domaine distinct du Worker.
 app.use('/api/*', cors());
 
+// Sans ce handler, une exception non attrapée (ex: erreur Workers AI) renvoie
+// un 500 sans corps exploitable côté client — impossible à diagnostiquer.
+app.onError((err, c) => {
+  console.error(err);
+  return c.json({ error: err instanceof Error ? err.message : 'Erreur interne du serveur' }, 500);
+});
+
 app.get('/', (c) => c.json({ name: 'SkillForge API', status: 'ok' }));
 
 // Démarre une nouvelle session : sélection adaptative des questions (V2).
