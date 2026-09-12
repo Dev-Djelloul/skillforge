@@ -20,21 +20,36 @@ interface GeneratedQuestion {
  * (Wikipédia, YouTube) plutôt que de pages précises — l'IA ne peut pas
  * garantir qu'une URL d'article qu'elle invente existe réellement, alors
  * qu'un lien de recherche fonctionne toujours.
+ *
+ * Le champ "topic" regroupe parfois plusieurs thèmes distincts séparés par
+ * des virgules (ex: "recette projet, critères acceptation, périmètre") —
+ * on les sépare pour donner une carte de recherche par thème plutôt qu'une
+ * seule requête fourre-tout illisible.
  */
 function buildSearchResources(topic: string): Resource[] {
-  const query = encodeURIComponent(topic);
-  return [
-    {
-      type: 'article',
-      title: `Rechercher : ${topic}`,
-      url: `https://fr.wikipedia.org/w/index.php?search=${query}`,
-    },
-    {
-      type: 'video',
-      title: `Vidéos sur : ${topic}`,
-      url: `https://www.youtube.com/results?search_query=${query}`,
-    },
-  ];
+  const themes = topic
+    .split(',')
+    .map((t) => t.trim())
+    .filter(Boolean)
+    .slice(0, 3);
+
+  if (themes.length === 0) return [];
+
+  return themes.flatMap((theme) => {
+    const query = encodeURIComponent(theme);
+    return [
+      {
+        type: 'article' as const,
+        title: `Rechercher : ${theme}`,
+        url: `https://fr.wikipedia.org/w/index.php?search=${query}`,
+      },
+      {
+        type: 'video' as const,
+        title: `Vidéos sur : ${theme}`,
+        url: `https://www.youtube.com/results?search_query=${query}`,
+      },
+    ];
+  });
 }
 
 async function generateQuestion(
@@ -46,7 +61,7 @@ async function generateQuestion(
   const systemPrompt = `Tu conçois des questions d'entretien technique pour un simulateur d'entraînement, dans le domaine : ${categoryLabel}.
 Génère UNE question originale et réaliste, de niveau ${DIFFICULTY_LABEL[difficulty] ?? 'intermédiaire'}, telle qu'un recruteur pourrait la poser.
 Réponds STRICTEMENT en JSON valide, sans texte autour :
-{"prompt": "<la question, en français>", "rubric": ["<point clé attendu 1>", "<point clé 2>", "<point clé 3>"], "hint": "<indice court qui oriente sans révéler la réponse>", "topic": "<2-4 mots-clés courts pour chercher plus d'infos sur ce sujet précis, en français>"}`;
+{"prompt": "<la question, en français>", "rubric": ["<point clé attendu 1>", "<point clé 2>", "<point clé 3>"], "hint": "<indice court qui oriente sans révéler la réponse>", "topic": "<UN SEUL thème précis (2-4 mots) pour chercher plus d'infos sur cette question, en français — pas une liste de plusieurs sujets>"}`;
 
   const avoidBlock = avoidPrompts.length
     ? `\n\nÉvite de reformuler ou de trop ressembler à ces questions déjà posées récemment :\n${avoidPrompts.map((p) => `- ${p}`).join('\n')}`
