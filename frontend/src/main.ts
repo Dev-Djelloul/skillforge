@@ -328,14 +328,14 @@ function renderFeedback(): string {
   return `
     ${topBar(false)}
     <div class="card feedback-card">
-      <div class="feedback-header">
-        <div class="score-line">
-          <span class="value">${evaluation.score}</span>
-          <span class="denom">/ 100</span>
-        </div>
-        <img src="/img/icons8-recruitment-96.png" alt="" class="feedback-recruiter-icon" />
+      <div class="score-line">
+        <span class="value">${evaluation.score}</span>
+        <span class="denom">/ 100</span>
       </div>
-      <p style="margin:0; font-size:14px; line-height:1.6; color:var(--color-text-muted);">${escapeHtml(evaluation.feedback)}</p>
+      <div class="feedback-answer-row">
+        <img src="/img/icons8-recruitment-96.png" alt="" class="feedback-recruiter-icon" />
+        <p style="margin:0; font-size:14px; line-height:1.6; color:var(--color-text-muted);">${escapeHtml(evaluation.feedback)}</p>
+      </div>
 
       ${
         evaluation.points_couverts.length

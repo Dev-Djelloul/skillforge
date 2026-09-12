@@ -378,11 +378,10 @@ textarea:focus-visible {
 .score-line .value { font-size: 40px; font-weight: 700; color: var(--color-accent); }
 .score-line .denom { font-size: 15px; color: var(--color-text-muted); }
 
-.feedback-header {
+.feedback-answer-row {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
+  align-items: flex-start;
+  gap: 14px;
 }
 .feedback-recruiter-icon {
   width: 72px;
@@ -391,7 +390,6 @@ textarea:focus-visible {
   flex-shrink: 0;
 }
 @media (max-width: 520px) {
-  .feedback-header { flex-direction: column-reverse; align-items: flex-start; }
   .feedback-recruiter-icon { width: 56px; height: 56px; min-width: 56px; }
 }
 

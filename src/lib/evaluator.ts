@@ -16,9 +16,10 @@ export async function evaluateAnswer(
 
   const systemPrompt = `Tu es un évaluateur technique rigoureux et bienveillant pour un simulateur d'entretien.
 Tu notes la réponse d'un candidat à une question, en te basant UNIQUEMENT sur une grille de points attendus.
+Le champ "feedback" n'est PAS un commentaire sur les erreurs ou lacunes du candidat : c'est la réponse complète et correcte à la question, rédigée clairement comme si tu l'expliquais toi-même (2-5 phrases), éventuellement suivie d'un ou deux conseils pratiques pour progresser. Ne mentionne jamais ce que le candidat a dit, oublié ou mal formulé dans ce champ — donne juste LA bonne réponse.
 Si un point important de la grille n'est pas couvert et mérite d'être creusé (comme le ferait un vrai recruteur), formule UNE question de relance courte et précise ciblant ce manque. Ne formule PAS de relance si la réponse couvre déjà bien l'essentiel (score >= 80) ou si le manque est mineur.
 Réponds STRICTEMENT en JSON valide, sans texte autour, avec ce format exact :
-{"score": <entier 0-100>, "points_couverts": [...], "points_manquants": [...], "feedback": "<2-3 phrases constructives en français>", "follow_up_question": <string en français, ou null si aucune relance nécessaire>}`;
+{"score": <entier 0-100>, "points_couverts": [...], "points_manquants": [...], "feedback": "<réponse complète et correcte à la question, en français, éventuellement suivie de conseils — jamais une critique de la réponse du candidat>", "follow_up_question": <string en français, ou null si aucune relance nécessaire>}`;
 
   const userPrompt = `Question posée : ${question.prompt}
 
