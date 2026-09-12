@@ -36,7 +36,8 @@ CREATE TABLE IF NOT EXISTS session_items (
   answered_at TEXT
 );
 
--- Préparé pour la V2 (sélection adaptative par compétence) — non utilisé en V1
+-- Score moyen par catégorie et par client_id — alimente la sélection
+-- adaptative des questions (V2).
 CREATE TABLE IF NOT EXISTS skill_scores (
   user_id TEXT NOT NULL,
   category_id INTEGER NOT NULL REFERENCES categories(id),

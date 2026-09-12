@@ -1,6 +1,27 @@
 // URL du Worker : surchargée en build via VITE_API_URL, sinon le déploiement de dev.
 const API_URL = import.meta.env.VITE_API_URL ?? 'https://skillforge.djelloulabid75.workers.dev';
 
+const CLIENT_ID_KEY = 'skillforge_client_id';
+
+/**
+ * Identifiant anonyme mais persistant (pas de compte utilisateur en V2),
+ * stocké côté navigateur. Permet au backend de suivre les scores par
+ * catégorie d'une session à l'autre et d'adapter la sélection des questions.
+ */
+function getClientId(): string {
+  try {
+    const existing = localStorage.getItem(CLIENT_ID_KEY);
+    if (existing) return existing;
+    const generated = crypto.randomUUID();
+    localStorage.setItem(CLIENT_ID_KEY, generated);
+    return generated;
+  } catch {
+    // localStorage indisponible (navigation privée stricte, etc.) : la
+    // session reste anonyme et non adaptative pour cette visite.
+    return crypto.randomUUID();
+  }
+}
+
 export interface SessionQuestion {
   position: number;
   question_id: number;
@@ -56,7 +77,10 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export function startSession(): Promise<StartSessionResponse> {
-  return request('/api/sessions', { method: 'POST' });
+  return request('/api/sessions', {
+    method: 'POST',
+    body: JSON.stringify({ client_id: getClientId() }),
+  });
 }
 
 export function submitAnswer(

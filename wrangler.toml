@@ -11,10 +11,9 @@ binding = "DB"
 database_name = "skillforge-db"
 database_id = "6a2e2809-912a-4c60-ba91-1e0bbbb639de"
 
-# V2 : banque de questions vectorisée pour la sélection adaptative
-# [[vectorize]]
-# binding = "QUESTIONS_INDEX"
-# index_name = "skillforge-questions"
+[[vectorize]]
+binding = "QUESTIONS_INDEX"
+index_name = "skillforge-questions"
 
 # V3 : stockage des transcripts audio et exports PDF
 # [[r2_buckets]]

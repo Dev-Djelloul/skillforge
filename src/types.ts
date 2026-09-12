@@ -1,6 +1,8 @@
 export type Bindings = {
   DB: D1Database;
   AI: Ai;
+  QUESTIONS_INDEX: VectorizeIndex;
+  REINDEX_SECRET: string;
 };
 
 export interface Question {
@@ -35,4 +37,11 @@ export interface Evaluation {
   feedback: string;
   points_couverts: string[];
   points_manquants: string[];
+}
+
+export interface SkillScore {
+  user_id: string;
+  category_id: number;
+  avg_score: number;
+  attempts: number;
 }
