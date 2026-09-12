@@ -115,7 +115,8 @@ a:hover { color: var(--color-primary-hover); }
   flex-shrink: 0;
   width: 34px;
   height: 34px;
-  border-radius: 50%;
+  border-radius: 0;
+  padding: 12px 12px;
   border: 1.5px solid var(--color-border);
   background: transparent;
   color: var(--color-text-subtle);
