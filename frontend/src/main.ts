@@ -229,7 +229,7 @@ function difficultyBadge(level: number): string {
 function renderStart(): string {
   return `
     ${topBar()}
-    <div class="hero">
+    <div class="hero hero-center">
       <h1>Préparez votre prochain entretien technique</h1>
       <p>SkillForge simule un entretien réaliste en IA/ML, gestion de projet digital et développement web, avec un feedback immédiat pour progresser à chaque session.</p>
       <div class="families">
