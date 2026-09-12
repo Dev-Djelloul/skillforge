@@ -1,5 +1,6 @@
 import type { Bindings, Question, SkillScore } from '../types';
 import { embedText } from './embeddings';
+import { generateAndStoreQuestion } from './question-generator';
 
 export interface CategoryRow {
   id: number;
@@ -8,6 +9,13 @@ export interface CategoryRow {
 }
 
 const QUESTIONS_PER_SESSION = 6;
+
+// Deux questions sur six sont générées fraîchement par l'IA plutôt que
+// tirées de la banque existante — elles y sont aussitôt ajoutées, donc la
+// banque grossit à chaque session au lieu de rester figée, ce qui réduit
+// la sensation de répétition au fil du temps sans tout regénérer à chaque
+// fois (coût/latence maîtrisés).
+const AI_GENERATED_SLOTS = new Set([2, 5]);
 
 /**
  * Poids de tirage par catégorie : plus le score moyen est faible, plus la
@@ -131,8 +139,10 @@ async function randomQuestionInCategory(
 
 /**
  * Sélectionne un jeu de questions pour une session :
+ * - deux questions sur six sont générées fraîchement par l'IA (voir
+ *   AI_GENERATED_SLOTS) et aussitôt ajoutées à la banque ;
  * - sans historique (utilisateur anonyme sans client_id, ou premières sessions) :
- *   tirage aléatoire équilibré entre catégories, comme en V1 ;
+ *   le reste est tiré aléatoirement, équilibré entre catégories, comme en V1 ;
  * - avec historique : les catégories faibles sont favorisées (poids inverse au
  *   score moyen), la difficulté ciblée suit le niveau observé, et pour les
  *   catégories déjà pratiquées on tente d'abord une question sémantiquement
@@ -163,7 +173,11 @@ export async function selectAdaptiveQuestions(
 
     let questionId: number | null = null;
 
-    if (userId && score && score.attempts > 0) {
+    if (AI_GENERATED_SLOTS.has(i)) {
+      questionId = await generateAndStoreQuestion(env, category.id, category.label, difficulty);
+    }
+
+    if (!questionId && userId && score && score.attempts > 0) {
       const reference = await worstAnsweredQuestion(env.DB, userId, category.id);
       if (reference) {
         questionId = await findSimilarQuestion(env, reference, category.id, excludeIds, forcedDifficulty);
