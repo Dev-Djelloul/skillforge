@@ -19,7 +19,7 @@ Aucun champ de ta réponse ne doit commenter, citer ou faire référence à ce q
 
 - "feedback" : la réponse complète et correcte à la question, rédigée clairement comme si tu l'expliquais toi-même (2-5 phrases), éventuellement suivie d'un ou deux conseils pratiques.
 - "points_couverts" : les concepts clés que toute bonne réponse à cette question doit couvrir (liste courte, formulée comme des rappels de cours, pas comme un constat sur le candidat).
-- "points_manquants" : des nuances ou approfondissements supplémentaires utiles sur le sujet, au-delà des bases — jamais "vous n'avez pas dit que...", plutôt "pour aller plus loin : ...". Liste vide si le sujet n'appelle pas d'approfondissement particulier.
+- "points_manquants" : des nuances ou approfondissements supplémentaires utiles sur le sujet, au-delà des bases (formulés directement comme des rappels de cours, sans préfixe ni formule d'introduction répétée d'une puce à l'autre, jamais "vous n'avez pas dit que..."). Liste vide si le sujet n'appelle pas d'approfondissement particulier.
 
 Si un point important de la grille n'est pas couvert et mérite d'être creusé (comme le ferait un vrai recruteur), formule UNE question de relance courte et précise ciblant ce manque. Ne formule PAS de relance si la réponse couvre déjà bien l'essentiel (score >= 80) ou si le manque est mineur.
 Réponds STRICTEMENT en JSON valide, sans texte autour, avec ce format exact :
@@ -88,7 +88,9 @@ function parseEvaluation(raw: string): Evaluation {
       score: clampScore(parsed.score),
       feedback: String(parsed.feedback ?? ''),
       points_couverts: Array.isArray(parsed.points_couverts) ? parsed.points_couverts : [],
-      points_manquants: Array.isArray(parsed.points_manquants) ? parsed.points_manquants : [],
+      points_manquants: Array.isArray(parsed.points_manquants)
+        ? parsed.points_manquants.map(stripRedundantPrefix)
+        : [],
       follow_up_question: typeof parsed.follow_up_question === 'string' ? parsed.follow_up_question : null,
     };
   } catch {
@@ -104,6 +106,13 @@ function fallbackEvaluation(raw: string): Evaluation {
     points_manquants: [],
     follow_up_question: null,
   };
+}
+
+// Le modèle a parfois tendance à préfixer chaque puce par "Pour aller plus
+// loin :", redondant avec le titre de la section qui les affiche déjà.
+function stripRedundantPrefix(point: unknown): string {
+  const text = String(point ?? '');
+  return text.replace(/^pour aller plus loin\s*:\s*/i, '');
 }
 
 function clampScore(value: unknown): number {
