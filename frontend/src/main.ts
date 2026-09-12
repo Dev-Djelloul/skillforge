@@ -291,6 +291,16 @@ const VIDEO_ICON_SVG = `<svg width="20" height="20" viewBox="0 0 24 24" fill="no
   <path d="M10 9l6 3-6 3V9z" fill="#FFFFFF"/>
 </svg>`;
 
+// Icône « recruteur » : silhouette + loupe, dans l'esprit d'une icône de
+// recrutement (Icons8 icons8-recruitment-96) redessinée en SVG maison
+// pour rester libre de droits et cohérente avec le reste de l'UI.
+const RECRUITER_ICON_SVG = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="10" cy="8" r="4" fill="#FFB020"/>
+  <path d="M3 20c0-4 3-6.5 7-6.5s7 2.5 7 6.5" stroke="#FFB020" stroke-width="1.8" stroke-linecap="round"/>
+  <circle cx="18" cy="16" r="3.5" fill="none" stroke="#FFB020" stroke-width="1.8"/>
+  <path d="M20.6 18.6L23 21" stroke="#FFB020" stroke-width="1.8" stroke-linecap="round"/>
+</svg>`;
+
 function faviconUrl(pageUrl: string): string {
   try {
     const domain = new URL(pageUrl).hostname;
@@ -367,7 +377,7 @@ function renderFollowUpSection(followUpQuestion: string | null): string {
   if (state.followUpFeedback) {
     return `
       <div class="followup-box">
-        <div class="followup-question">🎙️ ${escapeHtml(followUpQuestion)}</div>
+        <div class="followup-question">${RECRUITER_ICON_SVG}<span>${escapeHtml(followUpQuestion)}</span></div>
         <p class="followup-feedback">${escapeHtml(state.followUpFeedback)}</p>
       </div>
     `;
@@ -375,7 +385,7 @@ function renderFollowUpSection(followUpQuestion: string | null): string {
 
   return `
     <div class="followup-box">
-      <div class="followup-question">🎙️ Relance du recruteur : ${escapeHtml(followUpQuestion)}</div>
+      <div class="followup-question">${RECRUITER_ICON_SVG}<span>Relance du recruteur : ${escapeHtml(followUpQuestion)}</span></div>
       <textarea id="followup-input" placeholder="Répondez à la relance (facultatif)..."></textarea>
       <div class="actions-row">
         <span></span>

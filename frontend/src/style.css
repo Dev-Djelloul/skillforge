@@ -514,11 +514,15 @@ textarea:focus-visible {
   padding: 16px;
 }
 .followup-question {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
   font-size: 13px;
   font-weight: 600;
   color: var(--color-text);
   line-height: 1.5;
 }
+.followup-question svg { flex-shrink: 0; margin-top: 1px; }
 .followup-box textarea {
   min-height: 100px;
 }
