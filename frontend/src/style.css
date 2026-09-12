@@ -177,6 +177,11 @@ a:hover { color: var(--color-primary-hover); }
   .families { grid-template-columns: repeat(2, 1fr); }
 }
 .families .card {
+  height: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   padding: 16px;
   font-size: 13px;
   font-weight: 600;
@@ -192,13 +197,14 @@ a:hover { color: var(--color-primary-hover); }
 .family-card-wrap {
   position: relative;
   outline: none;
+  height: 100%;
 }
 .family-popover {
   position: absolute;
   z-index: 20;
   left: 50%;
-  bottom: calc(100% + 12px);
-  transform: translate(-50%, 6px);
+  top: calc(100% + 12px);
+  transform: translate(-50%, -6px);
   width: 280px;
   max-width: 80vw;
   background: var(--color-surface);
@@ -250,14 +256,14 @@ a:hover { color: var(--color-primary-hover); }
 .family-popover::after {
   content: '';
   position: absolute;
-  top: 100%;
+  bottom: 100%;
   left: 50%;
   transform: translateX(-50%);
   border: 7px solid transparent;
-  border-top-color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
 }
 @media (max-width: 640px) {
-  .family-popover { left: 0; transform: translate(0, 6px); width: min(280px, 90vw); }
+  .family-popover { left: 0; transform: translate(0, -6px); width: min(280px, 90vw); }
   .family-card-wrap:hover .family-popover,
   .family-card-wrap:focus-within .family-popover { transform: translate(0, 0); }
   .family-popover::after { left: 24px; transform: none; }
