@@ -98,8 +98,11 @@ a:hover { color: var(--color-primary-hover); }
   font-weight: 600;
   color: var(--color-text-muted);
   cursor: pointer;
+  text-decoration: none;
 }
 .nav-link:hover { color: var(--color-primary); }
+.nav-link-accent { color: var(--color-primary); }
+.nav-link-accent:hover { color: var(--color-primary); opacity: 0.8; }
 
 .session-row {
   border: 1px solid var(--color-border);

@@ -137,7 +137,7 @@ function topBar(showNav = true): string {
           ? `<nav class="top-nav">
               <button class="nav-link" id="nav-progress-btn">Mes progrès</button>
               <button class="nav-link" id="nav-history-btn">Historique</button>
-              <a class="nav-link" href="https://news.ycombinator.com/" target="_blank" rel="noopener noreferrer">Actus tech</a>
+              <a class="nav-link nav-link-accent" href="https://news.ycombinator.com/" target="_blank" rel="noopener noreferrer">Actus tech</a>
             </nav>`
           : ''
       }
