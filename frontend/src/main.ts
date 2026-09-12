@@ -569,19 +569,19 @@ function renderFeedback(): string {
 
       ${
         evaluation.points_couverts.length
-          ? `<div><strong style="font-size:13px;">Les points clés à retenir</strong><ul style="margin:8px 0 0; padding-left:18px; font-size:13px; color:var(--color-text-muted);">${evaluation.points_couverts.map((p) => `<li>${escapeHtml(p)}</li>`).join('')}</ul></div>`
+          ? `<div class="feedback-section"><span class="feedback-section-title">Les points clés à retenir</span><ul>${evaluation.points_couverts.map((p) => `<li>${escapeHtml(p)}</li>`).join('')}</ul></div>`
           : ''
       }
       ${
         evaluation.points_manquants.length
-          ? `<div><strong style="font-size:13px;">Nuances supplémentaires</strong><ul style="margin:8px 0 0; padding-left:18px; font-size:13px; color:var(--color-text-muted);">${evaluation.points_manquants.map((p) => `<li>${escapeHtml(p)}</li>`).join('')}</ul></div>`
+          ? `<div class="feedback-section"><span class="feedback-section-title">Nuances supplémentaires</span><ul>${evaluation.points_manquants.map((p) => `<li>${escapeHtml(p)}</li>`).join('')}</ul></div>`
           : ''
       }
 
       ${
         resources.length
           ? `<div class="resources">
-              <strong style="font-size:13px;">Pour aller plus loin</strong>
+              <span class="feedback-section-title">Pour aller plus loin</span>
               ${resources.map(renderResourceCard).join('')}
             </div>`
           : ''
