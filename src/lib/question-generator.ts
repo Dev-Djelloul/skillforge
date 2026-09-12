@@ -56,7 +56,8 @@ async function generateQuestion(
   env: Bindings,
   categoryLabel: string,
   difficulty: number,
-  avoidPrompts: string[]
+  avoidPrompts: string[],
+  candidateContext?: string
 ): Promise<GeneratedQuestion> {
   const systemPrompt = `Tu conçois des questions d'entretien technique pour un simulateur d'entraînement, dans le domaine : ${categoryLabel}.
 Génère UNE question originale et réaliste, de niveau ${DIFFICULTY_LABEL[difficulty] ?? 'intermédiaire'}, telle qu'un recruteur pourrait la poser.
@@ -67,10 +68,18 @@ Réponds STRICTEMENT en JSON valide, sans texte autour :
     ? `\n\nÉvite de reformuler ou de trop ressembler à ces questions déjà posées récemment :\n${avoidPrompts.map((p) => `- ${p}`).join('\n')}`
     : '';
 
+  // Contexte optionnel collé par le candidat (offre d'emploi visée ou son
+  // propre CV) : oriente la question vers son profil réel plutôt que vers
+  // une question générique de la famille — jamais une consigne à suivre
+  // aveuglément, juste du contexte à prendre en compte si pertinent.
+  const contextBlock = candidateContext?.trim()
+    ? `\n\nContexte fourni par le candidat (offre d'emploi visée ou son CV) — pioche-y des éléments concrets pour rendre la question plus pertinente pour lui, sans le citer ni t'y référer explicitement dans la question :\n"""\n${candidateContext.trim().slice(0, 2000)}\n"""`
+    : '';
+
   const raw = await callOpenRouter(
     env.OPENROUTER_API_KEY,
     [
-      { role: 'system', content: systemPrompt + avoidBlock },
+      { role: 'system', content: systemPrompt + avoidBlock + contextBlock },
       { role: 'user', content: 'Génère la question.' },
     ],
     512
@@ -104,7 +113,8 @@ export async function generateAndStoreQuestion(
   env: Bindings,
   categoryId: number,
   categoryLabel: string,
-  difficulty: number
+  difficulty: number,
+  candidateContext?: string
 ): Promise<number | null> {
   try {
     const recent = await env.DB.prepare(
@@ -117,7 +127,8 @@ export async function generateAndStoreQuestion(
       env,
       categoryLabel,
       difficulty,
-      recent.results.map((r) => r.prompt)
+      recent.results.map((r) => r.prompt),
+      candidateContext
     );
     const rubricJson = JSON.stringify(generated.rubric);
     const resourcesJson = JSON.stringify(buildSearchResources(generated.topic));

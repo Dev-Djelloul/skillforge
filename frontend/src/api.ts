@@ -28,6 +28,7 @@ export interface SessionQuestion {
   prompt: string;
   difficulty: number;
   category_slug: string;
+  is_new: boolean;
 }
 
 export interface StartSessionResponse {
@@ -81,6 +82,7 @@ export interface SessionSetup {
   categorySlugs: string[]; // vide = toutes les familles
   difficulty: number | null; // null = adaptatif
   full?: boolean; // mode "entretien complet" : 12 questions, toutes familles
+  context?: string; // offre d'emploi ou CV collé, pour des questions personnalisées
 }
 
 export function startSession(setup?: SessionSetup): Promise<StartSessionResponse> {
@@ -91,6 +93,7 @@ export function startSession(setup?: SessionSetup): Promise<StartSessionResponse
       category_slugs: setup && setup.categorySlugs.length > 0 ? setup.categorySlugs : undefined,
       difficulty: setup?.difficulty ?? undefined,
       full: setup?.full ?? undefined,
+      context: setup?.context && setup.context.trim() ? setup.context.trim() : undefined,
     }),
   });
 }

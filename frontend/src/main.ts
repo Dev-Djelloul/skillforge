@@ -62,6 +62,7 @@ interface AppState {
   setupCategories: Set<string>;
   setupDifficulty: number | null;
   setupFull: boolean;
+  setupContext: string;
   timeRemaining: number;
   followUpAnswered: boolean;
   followUpFeedback: string | null;
@@ -90,6 +91,7 @@ const state: AppState = {
   setupCategories: new Set(CATEGORIES.map((c) => c.slug)),
   setupDifficulty: null,
   setupFull: false,
+  setupContext: '',
   timeRemaining: 0,
   followUpAnswered: false,
   followUpFeedback: null,
@@ -102,6 +104,74 @@ const state: AppState = {
 };
 
 let timerHandle: ReturnType<typeof setInterval> | null = null;
+
+// Dictée vocale de la réponse (Web Speech API du navigateur, aucun appel
+// serveur) — gérée hors du cycle de rendu habituel : le texte reconnu est
+// injecté directement dans le textarea déjà présent dans le DOM, pour ne
+// jamais écraser ce que le candidat a déjà tapé en re-générant tout l'écran.
+type SpeechRecognitionLike = {
+  lang: string;
+  continuous: boolean;
+  interimResults: boolean;
+  onresult: ((event: any) => void) | null;
+  onend: (() => void) | null;
+  onerror: (() => void) | null;
+  start: () => void;
+  stop: () => void;
+};
+
+function getSpeechRecognitionCtor(): (new () => SpeechRecognitionLike) | null {
+  const w = window as any;
+  return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null;
+}
+
+function isSpeechRecognitionSupported(): boolean {
+  return getSpeechRecognitionCtor() !== null;
+}
+
+let activeRecognition: SpeechRecognitionLike | null = null;
+
+function toggleVoiceDictation(): void {
+  const micBtn = document.getElementById('mic-btn');
+  const textarea = document.getElementById('answer-input') as HTMLTextAreaElement | null;
+  if (!micBtn || !textarea) return;
+
+  if (activeRecognition) {
+    activeRecognition.stop();
+    return;
+  }
+
+  const Ctor = getSpeechRecognitionCtor();
+  if (!Ctor) return;
+
+  const recognition = new Ctor();
+  recognition.lang = 'fr-FR';
+  recognition.continuous = true;
+  recognition.interimResults = false;
+
+  const baseText = textarea.value;
+  let finalTranscript = '';
+
+  recognition.onresult = (event: any) => {
+    finalTranscript = '';
+    for (let i = 0; i < event.results.length; i++) {
+      finalTranscript += event.results[i][0].transcript;
+    }
+    textarea.value = (baseText ? baseText + ' ' : '') + finalTranscript;
+  };
+  recognition.onerror = () => {
+    activeRecognition = null;
+    micBtn.classList.remove('mic-btn-active');
+  };
+  recognition.onend = () => {
+    activeRecognition = null;
+    micBtn.classList.remove('mic-btn-active');
+  };
+
+  recognition.start();
+  activeRecognition = recognition;
+  micBtn.classList.add('mic-btn-active');
+}
 
 function formatTime(totalSeconds: number): string {
   const s = Math.max(0, totalSeconds);
@@ -226,6 +296,12 @@ function renderSetup(): string {
       </label>
     </div>
 
+    <div class="card" style="margin-top:16px; display:flex; flex-direction:column; gap:10px;">
+      <strong style="font-size:13px;">Personnalise avec une offre d'emploi ou ton CV (facultatif)</strong>
+      <p style="margin:0; font-size:12px; color:var(--color-text-muted);">Colle le texte d'une offre visée ou de ton CV — les questions générées s'appuieront sur ce contexte plutôt que rester génériques.</p>
+      <textarea id="setup-context-input" placeholder="Colle ici une offre d'emploi ou ton CV…" style="min-height:100px;">${escapeHtml(state.setupContext)}</textarea>
+    </div>
+
     ${state.errorMessage ? `<div class="error-box" style="margin-top:16px;">${escapeHtml(state.errorMessage)}</div>` : ''}
 
     <div class="actions-row" style="margin-top:24px;">
@@ -294,7 +370,7 @@ function renderQuestion(): string {
           </div>
           <div class="progress-bar"><div style="width:${progress}%"></div></div>
 
-          <div class="question-meta">${difficultyBadge(q.difficulty)}</div>
+          <div class="question-meta">${difficultyBadge(q.difficulty)}${q.is_new ? `<span class="badge badge-new">✨ Nouvelle question</span>` : ''}</div>
           <h2>${escapeHtml(q.prompt)}</h2>
 
           ${
@@ -305,7 +381,14 @@ function renderQuestion(): string {
                 </button>`
           }
 
-          <textarea id="answer-input" placeholder="Rédigez votre réponse ici — vous pouvez utiliser la méthode STAR pour structurer votre réponse..."></textarea>
+          <div class="answer-input-wrap">
+            <textarea id="answer-input" placeholder="Rédigez votre réponse ici — vous pouvez utiliser la méthode STAR pour structurer votre réponse..."></textarea>
+            ${
+              isSpeechRecognitionSupported()
+                ? `<button type="button" class="mic-btn" id="mic-btn" title="Dicter ma réponse à la voix">🎙️</button>`
+                : ''
+            }
+          </div>
 
           ${state.errorMessage ? `<div class="error-box">${escapeHtml(state.errorMessage)}</div>` : ''}
 
@@ -693,6 +776,7 @@ function attachHandlers(): void {
   document.getElementById('confirm-setup-btn')?.addEventListener('click', onConfirmSetup);
   document.getElementById('hint-btn')?.addEventListener('click', onHint);
   document.getElementById('submit-btn')?.addEventListener('click', onSubmit);
+  document.getElementById('mic-btn')?.addEventListener('click', toggleVoiceDictation);
   document.getElementById('submit-followup-btn')?.addEventListener('click', onSubmitFollowUp);
   document.getElementById('next-btn')?.addEventListener('click', onNext);
   document.getElementById('restart-btn')?.addEventListener('click', onRestart);
@@ -722,10 +806,14 @@ function attachHandlers(): void {
     state.setupFull = (e.target as HTMLInputElement).checked;
     render();
   });
+  document.getElementById('setup-context-input')?.addEventListener('input', (e) => {
+    state.setupContext = (e.target as HTMLTextAreaElement).value;
+  });
   document.getElementById('share-results-btn')?.addEventListener('click', onShareResults);
 
   if (state.screen !== 'question') {
     stopTimer();
+    activeRecognition?.stop();
   }
 }
 
@@ -740,6 +828,7 @@ async function onConfirmSetup(): Promise<void> {
     categorySlugs: [...state.setupCategories],
     difficulty: state.setupDifficulty,
     full: state.setupFull,
+    context: state.setupContext,
   };
 
   state.busy = true;
@@ -956,6 +1045,7 @@ function onRestart(): void {
   state.setupCategories = new Set(CATEGORIES.map((c) => c.slug));
   state.setupDifficulty = null;
   state.setupFull = false;
+  state.setupContext = '';
   state.followUpAnswered = false;
   state.followUpFeedback = null;
   state.shareMessage = null;

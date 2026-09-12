@@ -29,8 +29,23 @@ app.get('/', (c) => c.json({ name: 'SkillForge API', status: 'ok' }));
 // et aléatoire entre catégories, comme en V1.
 app.post('/api/sessions', async (c) => {
   const body = await c.req
-    .json<{ client_id?: string; category_slugs?: string[]; difficulty?: number; full?: boolean }>()
-    .catch(() => ({}) as { client_id?: string; category_slugs?: string[]; difficulty?: number; full?: boolean });
+    .json<{
+      client_id?: string;
+      category_slugs?: string[];
+      difficulty?: number;
+      full?: boolean;
+      context?: string;
+    }>()
+    .catch(
+      () =>
+        ({}) as {
+          client_id?: string;
+          category_slugs?: string[];
+          difficulty?: number;
+          full?: boolean;
+          context?: string;
+        }
+    );
   const userId = body.client_id ?? null;
   const sessionId = crypto.randomUUID();
 
@@ -57,11 +72,21 @@ app.post('/api/sessions', async (c) => {
   const forcedDifficulty =
     body.difficulty && body.difficulty >= 1 && body.difficulty <= 3 ? body.difficulty : undefined;
 
-  const questionIds = await selectAdaptiveQuestions(c.env, selectedCategories, userId, forcedDifficulty, isFull);
+  const selectedQuestions = await selectAdaptiveQuestions(
+    c.env,
+    selectedCategories,
+    userId,
+    forcedDifficulty,
+    isFull,
+    body.context
+  );
 
-  if (!questionIds.length) {
+  if (!selectedQuestions.length) {
     return c.json({ error: 'Aucune question disponible — la base a-t-elle été seedée ?' }, 500);
   }
+
+  const questionIds = selectedQuestions.map((q) => q.id);
+  const isNewById = new Map(selectedQuestions.map((q) => [q.id, q.isNew]));
 
   const placeholders = questionIds.map(() => '?').join(',');
   const questions = await c.env.DB.prepare(
@@ -97,6 +122,7 @@ app.post('/api/sessions', async (c) => {
       prompt: q.prompt,
       difficulty: q.difficulty,
       category_slug: q.category_slug,
+      is_new: isNewById.get(q.id) ?? false,
     })),
   });
 });

@@ -246,6 +246,37 @@ textarea:focus-visible {
   border-color: var(--color-primary);
 }
 
+.answer-input-wrap {
+  position: relative;
+}
+.mic-btn {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1.5px solid var(--color-border);
+  background: var(--color-surface);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.mic-btn:hover { border-color: var(--color-primary); }
+.mic-btn-active {
+  border-color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 16%, transparent);
+  animation: mic-pulse 1.4s ease-in-out infinite;
+}
+@keyframes mic-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-primary) 35%, transparent); }
+  50% { box-shadow: 0 0 0 8px transparent; }
+}
+
 /* Grille plein-bleed à deux colonnes égales : contenu de la question à
    gauche, lexique à droite. Une vraie grille CSS plutôt qu'un
    positionnement fixe + unités vw — reste correcte à n'importe quelle
@@ -335,11 +366,25 @@ textarea:focus-visible {
   margin: 0;
 }
 .question-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
   font-size: 12px;
   color: var(--color-text-subtle);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   font-weight: 600;
+}
+.badge-new {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 999px;
+  padding: 6px 12px;
+  background: color-mix(in srgb, var(--color-accent) 16%, transparent);
+  border: 1px solid var(--color-accent);
+  color: var(--color-accent);
 }
 
 .hint-toggle {

@@ -152,13 +152,19 @@ async function randomQuestionInCategory(
  *   Vectorize) avant de retomber sur un tirage aléatoire dans la
  *   catégorie/difficulté visée.
  */
+export interface SelectedQuestion {
+  id: number;
+  isNew: boolean; // vient d'être généré par IA pour cette session précise
+}
+
 export async function selectAdaptiveQuestions(
   env: Bindings,
   categories: CategoryRow[],
   userId: string | null,
   forcedDifficulty?: number,
-  full = false
-): Promise<number[]> {
+  full = false,
+  candidateContext?: string
+): Promise<SelectedQuestion[]> {
   const questionsPerSession = full ? QUESTIONS_PER_FULL_SESSION : QUESTIONS_PER_SESSION;
   const scores = userId
     ? (
@@ -184,17 +190,18 @@ export async function selectAdaptiveQuestions(
   const generatedIds = await Promise.all(
     slots.map((slot, i) =>
       AI_GENERATED_SLOTS.has(i)
-        ? generateAndStoreQuestion(env, slot.category.id, slot.category.label, slot.difficulty)
+        ? generateAndStoreQuestion(env, slot.category.id, slot.category.label, slot.difficulty, candidateContext)
         : Promise.resolve(null)
     )
   );
 
-  const selected: number[] = [];
+  const selected: SelectedQuestion[] = [];
   const excludeIds = new Set<number>();
 
   for (let i = 0; i < slots.length; i++) {
     const { category, score, difficulty } = slots[i];
     let questionId: number | null = generatedIds[i];
+    const isNew = questionId !== null;
 
     if (!questionId && userId && score && score.attempts > 0) {
       const reference = await worstAnsweredQuestion(env.DB, userId, category.id);
@@ -208,7 +215,7 @@ export async function selectAdaptiveQuestions(
     }
 
     if (questionId) {
-      selected.push(questionId);
+      selected.push({ id: questionId, isNew });
       excludeIds.add(questionId);
     }
   }
