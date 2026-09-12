@@ -378,6 +378,25 @@ textarea:focus-visible {
 .score-line .value { font-size: 40px; font-weight: 700; color: var(--color-accent); }
 .score-line .denom { font-size: 15px; color: var(--color-text-muted); }
 
+.feedback-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.feedback-recruiter-icon {
+  width: 150px;
+  height: 150px;
+  min-width: 150px;
+  flex-shrink: 0;
+  transform: rotate(-6deg);
+  filter: drop-shadow(0 8px 16px color-mix(in srgb, var(--color-primary) 35%, transparent));
+}
+@media (max-width: 520px) {
+  .feedback-header { flex-direction: column-reverse; align-items: flex-start; }
+  .feedback-recruiter-icon { width: 100px; height: 100px; min-width: 100px; }
+}
+
 .resources {
   display: flex;
   flex-direction: column;
