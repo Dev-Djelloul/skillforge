@@ -235,17 +235,20 @@ function toggleVoiceDictation(): void {
   const recognition = new Ctor();
   recognition.lang = 'fr-FR';
   recognition.continuous = true;
-  recognition.interimResults = false;
+  // Les résultats intermédiaires sont indispensables en mode continu : sans
+  // eux, Chrome n'écrit le texte qu'après avoir détecté une pause franche
+  // dans la voix, ce qui peut ne jamais se déclencher visiblement — d'où
+  // l'impression que le micro "ne fait rien" alors qu'il écoute bien.
+  recognition.interimResults = true;
 
-  const baseText = textarea.value;
-  let finalTranscript = '';
+  const baseText = textarea.value ? textarea.value + ' ' : '';
 
   recognition.onresult = (event: any) => {
-    finalTranscript = '';
+    let transcript = '';
     for (let i = 0; i < event.results.length; i++) {
-      finalTranscript += event.results[i][0].transcript;
+      transcript += event.results[i][0].transcript;
     }
-    textarea.value = (baseText ? baseText + ' ' : '') + finalTranscript;
+    textarea.value = baseText + transcript;
   };
   recognition.onerror = (event: any) => {
     activeRecognition = null;
