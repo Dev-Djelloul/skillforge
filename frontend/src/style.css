@@ -522,7 +522,7 @@ textarea:focus-visible {
   color: var(--color-text);
   line-height: 1.5;
 }
-.followup-question svg { flex-shrink: 0; margin-top: 1px; }
+.followup-icon { flex-shrink: 0; margin-top: 1px; border-radius: 4px; }
 .followup-box textarea {
   min-height: 100px;
 }
