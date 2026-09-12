@@ -381,16 +381,51 @@ textarea:focus-visible {
 .resources {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
 }
-.resources a {
+
+.resource-card {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 13px;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--color-border);
   text-decoration: none;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
 }
-.resources a:hover { text-decoration: underline; }
+.resource-card:hover {
+  border-color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 5%, transparent);
+}
+
+.resource-icon {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  object-fit: contain;
+  background: var(--color-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.resource-icon-video { padding: 0; overflow: hidden; }
+
+.resource-text { min-width: 0; }
+.resource-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.resource-type {
+  font-size: 11px;
+  color: var(--color-text-subtle);
+  margin-top: 2px;
+}
 
 .results-summary {
   display: flex;

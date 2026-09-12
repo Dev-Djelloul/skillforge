@@ -12,6 +12,7 @@ import {
   type ProgressResponse,
   type HistoryResponse,
   type SessionDetailResponse,
+  type Resource,
 } from './api';
 import { findRelevantTerms } from './glossary';
 
@@ -178,6 +179,37 @@ function renderQuestion(): string {
   `;
 }
 
+const VIDEO_ICON_SVG = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect x="2" y="5" width="20" height="14" rx="3" fill="#FF0033"/>
+  <path d="M10 9l6 3-6 3V9z" fill="#FFFFFF"/>
+</svg>`;
+
+function faviconUrl(pageUrl: string): string {
+  try {
+    const domain = new URL(pageUrl).hostname;
+    return `https://www.google.com/s2/favicons?sz=64&domain=${encodeURIComponent(domain)}`;
+  } catch {
+    return '';
+  }
+}
+
+function renderResourceCard(r: Resource): string {
+  const isVideo = r.type === 'video';
+  const preview = isVideo
+    ? `<div class="resource-icon resource-icon-video">${VIDEO_ICON_SVG}</div>`
+    : `<img class="resource-icon" src="${escapeAttr(faviconUrl(r.url))}" alt="" width="20" height="20" />`;
+
+  return `
+    <a class="resource-card" href="${escapeAttr(r.url)}" target="_blank" rel="noopener noreferrer">
+      ${preview}
+      <div class="resource-text">
+        <div class="resource-title">${escapeHtml(r.title)}</div>
+        <div class="resource-type">${isVideo ? 'Rechercher des vidéos' : 'Article'}</div>
+      </div>
+    </a>
+  `;
+}
+
 function renderFeedback(): string {
   const session = state.session!;
   const answer = state.lastAnswer!;
@@ -208,7 +240,7 @@ function renderFeedback(): string {
         resources.length
           ? `<div class="resources">
               <strong style="font-size:13px;">Pour aller plus loin</strong>
-              ${resources.map((r) => `<a href="${escapeAttr(r.url)}" target="_blank" rel="noopener noreferrer">${r.type === 'video' ? '▶️' : '📄'} ${escapeHtml(r.title)}</a>`).join('')}
+              ${resources.map(renderResourceCard).join('')}
             </div>`
           : ''
       }
