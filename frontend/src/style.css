@@ -255,15 +255,32 @@ a:hover { color: var(--color-primary-hover); }
   box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5);
   opacity: 0;
   pointer-events: none;
-  transform: translate(-50%, -50%) scale(0.97);
-  transition: opacity 0.15s ease, transform 0.15s ease;
+  transition: opacity 0.2s ease, transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 .family-card-wrap:hover .family-popover,
 .family-card-wrap:focus-within .family-popover {
   opacity: 1;
-  transform: translate(-50%, -50%) scale(1);
   pointer-events: auto;
 }
+
+/* Chaque carte fait entrer son popover depuis une direction différente
+   (gauche / haut / bas / droite) pour le distinguer visuellement selon
+   la famille survolée, tout en restant centré une fois ouvert. */
+.family-card-wrap:nth-child(1) .family-popover { transform: translate(calc(-50% - 60px), -50%); }
+.family-card-wrap:nth-child(1):hover .family-popover,
+.family-card-wrap:nth-child(1):focus-within .family-popover { transform: translate(-50%, -50%); }
+
+.family-card-wrap:nth-child(2) .family-popover { transform: translate(-50%, calc(-50% - 60px)); }
+.family-card-wrap:nth-child(2):hover .family-popover,
+.family-card-wrap:nth-child(2):focus-within .family-popover { transform: translate(-50%, -50%); }
+
+.family-card-wrap:nth-child(3) .family-popover { transform: translate(-50%, calc(-50% + 60px)); }
+.family-card-wrap:nth-child(3):hover .family-popover,
+.family-card-wrap:nth-child(3):focus-within .family-popover { transform: translate(-50%, -50%); }
+
+.family-card-wrap:nth-child(4) .family-popover { transform: translate(calc(-50% + 60px), -50%); }
+.family-card-wrap:nth-child(4):hover .family-popover,
+.family-card-wrap:nth-child(4):focus-within .family-popover { transform: translate(-50%, -50%); }
 .family-popover strong {
   display: block;
   font-family: var(--font-display);
