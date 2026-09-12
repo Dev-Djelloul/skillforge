@@ -140,6 +140,7 @@ interface AppState {
   followUpBusy: boolean;
   shareMessage: string | null;
   sharedView: boolean;
+  confirmDeleteSessionId: string | null;
   glossaryTerms: GlossaryTerm[] | null;
   glossaryLoading: boolean;
   glossaryQuestionId: number | null;
@@ -169,6 +170,7 @@ const state: AppState = {
   followUpBusy: false,
   shareMessage: null,
   sharedView: false,
+  confirmDeleteSessionId: null,
   glossaryTerms: null,
   glossaryLoading: false,
   glossaryQuestionId: null,
@@ -856,8 +858,23 @@ function render(): void {
     default:
       html = renderError();
   }
-  app.innerHTML = html;
+  app.innerHTML = html + (state.confirmDeleteSessionId ? renderConfirmDeleteModal() : '');
   attachHandlers();
+}
+
+function renderConfirmDeleteModal(): string {
+  return `
+    <div class="modal-backdrop" id="confirm-delete-backdrop">
+      <div class="modal-box" role="dialog" aria-modal="true">
+        <strong>Supprimer cette session ?</strong>
+        <p>Cette action est définitive : la session et ses réponses seront retirées de ton historique, sans possibilité de retour en arrière.</p>
+        <div class="actions-row" style="margin-top:20px;">
+          <button class="btn-secondary" id="confirm-delete-cancel">Annuler</button>
+          <button class="btn-danger" id="confirm-delete-ok">Supprimer</button>
+        </div>
+      </div>
+    </div>
+  `;
 }
 
 function attachHandlers(): void {
@@ -881,8 +898,22 @@ function attachHandlers(): void {
     row.addEventListener('click', () => onViewSessionDetail(row.dataset.sessionId!));
   });
   document.querySelectorAll<HTMLButtonElement>('.session-delete-btn').forEach((btn) => {
-    btn.addEventListener('click', () => onDeleteSession(btn.dataset.sessionId!));
+    btn.addEventListener('click', () => {
+      state.confirmDeleteSessionId = btn.dataset.sessionId!;
+      render();
+    });
   });
+  document.getElementById('confirm-delete-cancel')?.addEventListener('click', () => {
+    state.confirmDeleteSessionId = null;
+    render();
+  });
+  document.getElementById('confirm-delete-backdrop')?.addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) {
+      state.confirmDeleteSessionId = null;
+      render();
+    }
+  });
+  document.getElementById('confirm-delete-ok')?.addEventListener('click', onConfirmDeleteSession);
   document.querySelectorAll<HTMLInputElement>('.setup-categories input[data-category]').forEach((input) => {
     input.addEventListener('change', () => {
       const slug = input.dataset.category!;
@@ -1112,9 +1143,11 @@ async function onNavHistory(): Promise<void> {
   }
 }
 
-async function onDeleteSession(sessionId: string): Promise<void> {
-  if (!window.confirm('Supprimer définitivement cette session de ton historique ?')) return;
+async function onConfirmDeleteSession(): Promise<void> {
+  const sessionId = state.confirmDeleteSessionId;
+  if (!sessionId) return;
 
+  state.confirmDeleteSessionId = null;
   try {
     await deleteSession(sessionId);
     if (state.historyData) {
@@ -1161,6 +1194,7 @@ function onRestart(): void {
   state.followUpFeedback = null;
   state.shareMessage = null;
   state.sharedView = false;
+  state.confirmDeleteSessionId = null;
   state.glossaryTerms = null;
   state.glossaryLoading = false;
   state.glossaryQuestionId = null;
