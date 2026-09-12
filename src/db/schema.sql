@@ -33,7 +33,10 @@ CREATE TABLE IF NOT EXISTS session_items (
   user_answer TEXT,
   score INTEGER, -- 0-100
   feedback TEXT,
-  answered_at TEXT
+  answered_at TEXT,
+  follow_up_question TEXT, -- relance générée si la réponse laisse un point important non couvert
+  follow_up_answer TEXT,
+  follow_up_feedback TEXT
 );
 
 -- Score moyen par catégorie et par client_id — alimente la sélection

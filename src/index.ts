@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import type { Bindings, Question, Resource, SessionItem } from './types';
-import { evaluateAnswer } from './lib/evaluator';
+import { evaluateAnswer, evaluateFollowUp } from './lib/evaluator';
 import { generateRevisionPlan, type CategoryBreakdown } from './lib/planner';
 import { selectAdaptiveQuestions, type CategoryRow } from './lib/adaptive';
 import { embedText, questionEmbeddingText } from './lib/embeddings';
@@ -27,17 +27,31 @@ app.get('/', (c) => c.json({ name: 'SkillForge API', status: 'ok' }));
 // faibles (Vectorize). Sans historique, on retombe sur un tirage équilibré
 // et aléatoire entre catégories, comme en V1.
 app.post('/api/sessions', async (c) => {
-  const body = await c.req.json<{ client_id?: string }>().catch(() => ({}) as { client_id?: string });
+  const body = await c.req
+    .json<{ client_id?: string; category_slugs?: string[]; difficulty?: number }>()
+    .catch(() => ({}) as { client_id?: string; category_slugs?: string[]; difficulty?: number });
   const userId = body.client_id ?? null;
   const sessionId = crypto.randomUUID();
 
-  const categories = await c.env.DB.prepare(`SELECT id, slug, label FROM categories`).all<CategoryRow>();
+  const allCategories = await c.env.DB.prepare(`SELECT id, slug, label FROM categories`).all<CategoryRow>();
 
-  if (!categories.results.length) {
+  if (!allCategories.results.length) {
     return c.json({ error: 'Aucune catégorie disponible — la base a-t-elle été seedée ?' }, 500);
   }
 
-  const questionIds = await selectAdaptiveQuestions(c.env, categories.results, userId);
+  // Parcours choisi par le candidat (V2) : restreint aux familles cochées,
+  // repli sur toutes les familles si rien n'est précisé ou si le filtre
+  // ne correspond à aucune catégorie connue.
+  const categories =
+    body.category_slugs && body.category_slugs.length > 0
+      ? allCategories.results.filter((cat) => body.category_slugs!.includes(cat.slug))
+      : allCategories.results;
+  const selectedCategories = categories.length > 0 ? categories : allCategories.results;
+
+  const forcedDifficulty =
+    body.difficulty && body.difficulty >= 1 && body.difficulty <= 3 ? body.difficulty : undefined;
+
+  const questionIds = await selectAdaptiveQuestions(c.env, selectedCategories, userId, forcedDifficulty);
 
   if (!questionIds.length) {
     return c.json({ error: 'Aucune question disponible — la base a-t-elle été seedée ?' }, 500);
@@ -152,6 +166,34 @@ app.post('/api/sessions/:id/answer', async (c) => {
   const resources: Resource[] = question.resources ? JSON.parse(question.resources) : [];
 
   return c.json({ evaluation, resources });
+});
+
+// Soumet une réponse à la relance générée après la question principale.
+// N'affecte pas le score déjà enregistré — sert à approfondir la
+// discussion, pas à re-noter la question.
+app.post('/api/sessions/:id/followup', async (c) => {
+  const sessionId = c.req.param('id');
+  const body = await c.req.json<{ question_id: number; follow_up_question: string; answer: string }>();
+
+  const question = await c.env.DB.prepare(`SELECT prompt FROM questions WHERE id = ?`)
+    .bind(body.question_id)
+    .first<{ prompt: string }>();
+
+  if (!question) {
+    return c.json({ error: 'Question introuvable' }, 404);
+  }
+
+  const feedback = await evaluateFollowUp(c.env.AI, question.prompt, body.follow_up_question, body.answer);
+
+  await c.env.DB.prepare(
+    `UPDATE session_items
+     SET follow_up_question = ?, follow_up_answer = ?, follow_up_feedback = ?
+     WHERE session_id = ? AND question_id = ?`
+  )
+    .bind(body.follow_up_question, body.answer, feedback, sessionId, body.question_id)
+    .run();
+
+  return c.json({ feedback });
 });
 
 // Clôture la session et génère le plan de révision personnalisé

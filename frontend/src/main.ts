@@ -1,6 +1,7 @@
 import {
   startSession,
   submitAnswer,
+  submitFollowUp,
   completeSession,
   getHint,
   getProgress,
@@ -13,8 +14,18 @@ import {
   type HistoryResponse,
   type SessionDetailResponse,
   type Resource,
+  type SessionSetup,
 } from './api';
 import { findRelevantTerms } from './glossary';
+
+const CATEGORIES = [
+  { slug: 'ia-ml', label: 'IA & Machine Learning' },
+  { slug: 'gestion-projet', label: 'Gestion de projet digital' },
+  { slug: 'dev-web', label: 'Développement web' },
+  { slug: 'culture-num', label: 'Culture métiers du numérique' },
+];
+
+const TIME_BY_DIFFICULTY: Record<number, number> = { 1: 180, 2: 300, 3: 480 };
 
 const LOGO_SVG = `<svg width="26" height="26" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
   <rect x="10" y="42" width="30" height="10" rx="2" fill="currentColor"/>
@@ -29,7 +40,7 @@ const DIFFICULTY_LABEL: Record<number, string> = {
   3: 'Niveau 3 · Avancé',
 };
 
-type Screen = 'start' | 'question' | 'feedback' | 'results' | 'error' | 'progress' | 'history' | 'session-detail';
+type Screen = 'start' | 'setup' | 'question' | 'feedback' | 'results' | 'error' | 'progress' | 'history' | 'session-detail';
 
 interface AppState {
   screen: Screen;
@@ -44,6 +55,12 @@ interface AppState {
   progressData: ProgressResponse | null;
   historyData: HistoryResponse | null;
   sessionDetail: SessionDetailResponse | null;
+  setupCategories: Set<string>;
+  setupDifficulty: number | null;
+  timeRemaining: number;
+  followUpAnswered: boolean;
+  followUpFeedback: string | null;
+  followUpBusy: boolean;
 }
 
 const state: AppState = {
@@ -59,7 +76,45 @@ const state: AppState = {
   progressData: null,
   historyData: null,
   sessionDetail: null,
+  setupCategories: new Set(CATEGORIES.map((c) => c.slug)),
+  setupDifficulty: null,
+  timeRemaining: 0,
+  followUpAnswered: false,
+  followUpFeedback: null,
+  followUpBusy: false,
 };
+
+let timerHandle: ReturnType<typeof setInterval> | null = null;
+
+function formatTime(totalSeconds: number): string {
+  const s = Math.max(0, totalSeconds);
+  const m = Math.floor(s / 60);
+  const sec = s % 60;
+  return `${m}:${sec.toString().padStart(2, '0')}`;
+}
+
+function stopTimer(): void {
+  if (timerHandle !== null) {
+    clearInterval(timerHandle);
+    timerHandle = null;
+  }
+}
+
+function startQuestionTimer(difficulty: number): void {
+  stopTimer();
+  state.timeRemaining = TIME_BY_DIFFICULTY[difficulty] ?? 300;
+  timerHandle = setInterval(() => {
+    state.timeRemaining -= 1;
+    const el = document.getElementById('timer-display');
+    if (el) {
+      el.textContent = formatTime(state.timeRemaining);
+      el.classList.toggle('timer-low', state.timeRemaining <= 30);
+    }
+    if (state.timeRemaining <= 0) {
+      stopTimer();
+    }
+  }, 1000);
+}
 
 const app = document.getElementById('app')!;
 
@@ -95,10 +150,61 @@ function renderStart(): string {
         <div class="card">Développement web<span>Architecture, API, sécurité</span></div>
         <div class="card">Culture numérique<span>UX, produit, transformation</span></div>
       </div>
-      <button class="btn-primary" id="start-btn" ${state.busy ? 'disabled' : ''}>
-        ${state.busy ? 'Préparation de la session…' : 'Commencer l’entretien'}
-      </button>
+      <button class="btn-primary" id="goto-setup-btn">Commencer l’entretien</button>
       ${state.errorMessage ? `<div class="error-box">${escapeHtml(state.errorMessage)}</div>` : ''}
+    </div>
+  `;
+}
+
+function renderSetup(): string {
+  return `
+    ${topBar(false)}
+    <div class="hero" style="padding-top:24px; padding-bottom:16px;">
+      <h1 style="font-size:28px;">Personnalise ta session</h1>
+      <p>Choisis les familles à pratiquer et le niveau de difficulté — ou laisse la sélection adaptative faire le tri pour toi.</p>
+    </div>
+
+    <div class="card" style="display:flex; flex-direction:column; gap:14px;">
+      <strong style="font-size:13px;">Familles de questions</strong>
+      <div class="setup-categories">
+        ${CATEGORIES.map(
+          (c) => `
+            <label class="setup-checkbox">
+              <input type="checkbox" data-category="${escapeAttr(c.slug)}" ${state.setupCategories.has(c.slug) ? 'checked' : ''} />
+              <span>${escapeHtml(c.label)}</span>
+            </label>
+          `
+        ).join('')}
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:16px; display:flex; flex-direction:column; gap:14px;">
+      <strong style="font-size:13px;">Niveau de difficulté</strong>
+      <div class="setup-categories">
+        <label class="setup-checkbox">
+          <input type="radio" name="difficulty" value="" ${state.setupDifficulty === null ? 'checked' : ''} />
+          <span>Adaptatif (recommandé)</span>
+        </label>
+        ${[1, 2, 3]
+          .map(
+            (d) => `
+              <label class="setup-checkbox">
+                <input type="radio" name="difficulty" value="${d}" ${state.setupDifficulty === d ? 'checked' : ''} />
+                <span>${DIFFICULTY_LABEL[d]}</span>
+              </label>
+            `
+          )
+          .join('')}
+      </div>
+    </div>
+
+    ${state.errorMessage ? `<div class="error-box" style="margin-top:16px;">${escapeHtml(state.errorMessage)}</div>` : ''}
+
+    <div class="actions-row" style="margin-top:24px;">
+      <button class="btn-secondary" id="back-to-start-btn">← Retour</button>
+      <button class="btn-primary" id="confirm-setup-btn" ${state.busy ? 'disabled' : ''}>
+        ${state.busy ? 'Préparation de la session…' : 'Lancer la session'}
+      </button>
     </div>
   `;
 }
@@ -146,6 +252,7 @@ function renderQuestion(): string {
         <div class="question-block">
           <div class="session-header">
             <span>Question ${state.currentIndex + 1} / ${session.questions.length}</span>
+            <span class="timer-badge" id="timer-display">${formatTime(state.timeRemaining)}</span>
             <span class="muted">${progress}%</span>
           </div>
           <div class="progress-bar"><div style="width:${progress}%"></div></div>
@@ -245,9 +352,37 @@ function renderFeedback(): string {
           : ''
       }
 
+      ${renderFollowUpSection(evaluation.follow_up_question)}
+
       <button class="btn-primary" id="next-btn">
         ${isLast ? 'Voir mes résultats' : 'Question suivante'}
       </button>
+    </div>
+  `;
+}
+
+function renderFollowUpSection(followUpQuestion: string | null): string {
+  if (!followUpQuestion) return '';
+
+  if (state.followUpFeedback) {
+    return `
+      <div class="followup-box">
+        <div class="followup-question">🎙️ ${escapeHtml(followUpQuestion)}</div>
+        <p class="followup-feedback">${escapeHtml(state.followUpFeedback)}</p>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="followup-box">
+      <div class="followup-question">🎙️ Relance du recruteur : ${escapeHtml(followUpQuestion)}</div>
+      <textarea id="followup-input" placeholder="Répondez à la relance (facultatif)..."></textarea>
+      <div class="actions-row">
+        <span></span>
+        <button class="btn-secondary" id="submit-followup-btn" ${state.followUpBusy ? 'disabled' : ''}>
+          ${state.followUpBusy ? 'Envoi…' : 'Répondre à la relance'}
+        </button>
+      </div>
     </div>
   `;
 }
@@ -346,9 +481,7 @@ function renderProgress(): string {
 
     <div class="actions-row" style="margin-top:24px;">
       <span></span>
-      <button class="btn-primary" id="start-btn" ${state.busy ? 'disabled' : ''}>
-        ${state.busy ? 'Préparation…' : 'Commencer une session'}
-      </button>
+      <button class="btn-primary" id="goto-setup-btn">Commencer une session</button>
     </div>
   `;
 }
@@ -426,6 +559,9 @@ function render(): void {
     case 'start':
       html = renderStart();
       break;
+    case 'setup':
+      html = renderSetup();
+      break;
     case 'question':
       html = renderQuestion();
       break;
@@ -452,9 +588,12 @@ function render(): void {
 }
 
 function attachHandlers(): void {
-  document.getElementById('start-btn')?.addEventListener('click', onStart);
+  document.getElementById('goto-setup-btn')?.addEventListener('click', onGoToSetup);
+  document.getElementById('back-to-start-btn')?.addEventListener('click', onRestart);
+  document.getElementById('confirm-setup-btn')?.addEventListener('click', onConfirmSetup);
   document.getElementById('hint-btn')?.addEventListener('click', onHint);
   document.getElementById('submit-btn')?.addEventListener('click', onSubmit);
+  document.getElementById('submit-followup-btn')?.addEventListener('click', onSubmitFollowUp);
   document.getElementById('next-btn')?.addEventListener('click', onNext);
   document.getElementById('restart-btn')?.addEventListener('click', onRestart);
   document.getElementById('retry-btn')?.addEventListener('click', onRestart);
@@ -466,22 +605,54 @@ function attachHandlers(): void {
   document.querySelectorAll<HTMLButtonElement>('.session-row').forEach((row) => {
     row.addEventListener('click', () => onViewSessionDetail(row.dataset.sessionId!));
   });
+  document.querySelectorAll<HTMLInputElement>('.setup-categories input[data-category]').forEach((input) => {
+    input.addEventListener('change', () => {
+      const slug = input.dataset.category!;
+      if (input.checked) state.setupCategories.add(slug);
+      else state.setupCategories.delete(slug);
+    });
+  });
+  document.querySelectorAll<HTMLInputElement>('input[name="difficulty"]').forEach((input) => {
+    input.addEventListener('change', () => {
+      state.setupDifficulty = input.value ? Number(input.value) : null;
+    });
+  });
+
+  if (state.screen !== 'question') {
+    stopTimer();
+  }
 }
 
-async function onStart(): Promise<void> {
+function onGoToSetup(): void {
+  state.screen = 'setup';
+  state.errorMessage = null;
+  render();
+}
+
+async function onConfirmSetup(): Promise<void> {
+  const setup: SessionSetup = {
+    categorySlugs: [...state.setupCategories],
+    difficulty: state.setupDifficulty,
+  };
+
   state.busy = true;
   state.errorMessage = null;
   render();
   try {
-    state.session = await startSession();
+    state.session = await startSession(setup);
     state.currentIndex = 0;
     state.hint = null;
     state.screen = 'question';
+    state.timeRemaining = TIME_BY_DIFFICULTY[state.session.questions[0].difficulty] ?? 300;
   } catch (err) {
     state.errorMessage = err instanceof Error ? err.message : 'Impossible de démarrer la session.';
+    state.screen = 'setup';
   } finally {
     state.busy = false;
     render();
+    if (state.screen === 'question') {
+      startQuestionTimer(state.session!.questions[0].difficulty);
+    }
   }
 }
 
@@ -519,10 +690,35 @@ async function onSubmit(): Promise<void> {
   try {
     state.lastAnswer = await submitAnswer(session.session_id, q.question_id, answerText);
     state.screen = 'feedback';
+    state.followUpAnswered = false;
+    state.followUpFeedback = null;
   } catch (err) {
     state.errorMessage = err instanceof Error ? err.message : 'Impossible d’évaluer la réponse.';
   } finally {
     state.busy = false;
+    render();
+  }
+}
+
+async function onSubmitFollowUp(): Promise<void> {
+  const session = state.session!;
+  const q = session.questions[state.currentIndex];
+  const followUpQuestion = state.lastAnswer!.evaluation.follow_up_question!;
+  const textarea = document.getElementById('followup-input') as HTMLTextAreaElement | null;
+  const answerText = textarea?.value.trim() ?? '';
+
+  if (!answerText) return;
+
+  state.followUpBusy = true;
+  render();
+  try {
+    const { feedback } = await submitFollowUp(session.session_id, q.question_id, followUpQuestion, answerText);
+    state.followUpFeedback = feedback;
+    state.followUpAnswered = true;
+  } catch (err) {
+    state.errorMessage = err instanceof Error ? err.message : 'Impossible d’envoyer la relance.';
+  } finally {
+    state.followUpBusy = false;
     render();
   }
 }
@@ -535,8 +731,13 @@ async function onNext(): Promise<void> {
     state.currentIndex += 1;
     state.hint = null;
     state.lastAnswer = null;
+    state.followUpAnswered = false;
+    state.followUpFeedback = null;
     state.screen = 'question';
+    const nextQuestion = session.questions[state.currentIndex];
+    state.timeRemaining = TIME_BY_DIFFICULTY[nextQuestion.difficulty] ?? 300;
     render();
+    startQuestionTimer(nextQuestion.difficulty);
     return;
   }
 
@@ -595,6 +796,7 @@ async function onViewSessionDetail(sessionId: string): Promise<void> {
 }
 
 function onRestart(): void {
+  stopTimer();
   state.screen = 'start';
   state.session = null;
   state.currentIndex = 0;
@@ -602,6 +804,10 @@ function onRestart(): void {
   state.lastAnswer = null;
   state.results = null;
   state.errorMessage = null;
+  state.setupCategories = new Set(CATEGORIES.map((c) => c.slug));
+  state.setupDifficulty = null;
+  state.followUpAnswered = false;
+  state.followUpFeedback = null;
   render();
 }
 

@@ -474,6 +474,61 @@ textarea:focus-visible {
   font-size: 14px;
 }
 
+.setup-categories {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.setup-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  color: var(--color-text);
+  cursor: pointer;
+}
+.setup-checkbox input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--color-primary);
+  cursor: pointer;
+}
+
+.timer-badge {
+  font-family: monospace;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+.timer-badge.timer-low {
+  color: var(--color-level-3);
+}
+
+.followup-box {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: color-mix(in srgb, var(--color-primary) 8%, transparent);
+  border: 1px solid var(--color-primary);
+  border-radius: 12px;
+  padding: 16px;
+}
+.followup-question {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text);
+  line-height: 1.5;
+}
+.followup-box textarea {
+  min-height: 100px;
+}
+.followup-feedback {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--color-text-muted);
+}
+
 /* Export du bilan en PDF via l'impression navigateur : pas de dépendance
    supplémentaire, le résultat est net avec une simple feuille dédiée. */
 @media print {

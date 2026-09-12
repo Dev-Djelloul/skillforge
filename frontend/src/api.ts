@@ -46,6 +46,7 @@ export interface Evaluation {
   feedback: string;
   points_couverts: string[];
   points_manquants: string[];
+  follow_up_question: string | null;
 }
 
 export interface AnswerResponse {
@@ -76,10 +77,19 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return res.json() as Promise<T>;
 }
 
-export function startSession(): Promise<StartSessionResponse> {
+export interface SessionSetup {
+  categorySlugs: string[]; // vide = toutes les familles
+  difficulty: number | null; // null = adaptatif
+}
+
+export function startSession(setup?: SessionSetup): Promise<StartSessionResponse> {
   return request('/api/sessions', {
     method: 'POST',
-    body: JSON.stringify({ client_id: getClientId() }),
+    body: JSON.stringify({
+      client_id: getClientId(),
+      category_slugs: setup && setup.categorySlugs.length > 0 ? setup.categorySlugs : undefined,
+      difficulty: setup?.difficulty ?? undefined,
+    }),
   });
 }
 
@@ -91,6 +101,18 @@ export function submitAnswer(
   return request(`/api/sessions/${sessionId}/answer`, {
     method: 'POST',
     body: JSON.stringify({ question_id: questionId, answer }),
+  });
+}
+
+export function submitFollowUp(
+  sessionId: string,
+  questionId: number,
+  followUpQuestion: string,
+  answer: string
+): Promise<{ feedback: string }> {
+  return request(`/api/sessions/${sessionId}/followup`, {
+    method: 'POST',
+    body: JSON.stringify({ question_id: questionId, follow_up_question: followUpQuestion, answer }),
   });
 }
 

@@ -30,6 +30,9 @@ export interface SessionItem {
   score: number | null;
   feedback: string | null;
   answered_at: string | null;
+  follow_up_question: string | null;
+  follow_up_answer: string | null;
+  follow_up_feedback: string | null;
 }
 
 export interface Evaluation {
@@ -37,6 +40,7 @@ export interface Evaluation {
   feedback: string;
   points_couverts: string[];
   points_manquants: string[];
+  follow_up_question: string | null;
 }
 
 export interface SkillScore {

@@ -70,13 +70,16 @@ async function findSimilarQuestion(
   env: Bindings,
   referenceQuestion: Question,
   categoryId: number,
-  excludeIds: Set<number>
+  excludeIds: Set<number>,
+  forcedDifficulty?: number
 ): Promise<number | null> {
   try {
     const vector = await embedText(env.AI, referenceQuestion.prompt);
+    const filter: Record<string, number> = { category_id: categoryId };
+    if (forcedDifficulty) filter.difficulty = forcedDifficulty;
     const matches = await env.QUESTIONS_INDEX.query(vector, {
       topK: 8,
-      filter: { category_id: categoryId },
+      filter,
       returnMetadata: 'none',
     });
 
@@ -139,7 +142,8 @@ async function randomQuestionInCategory(
 export async function selectAdaptiveQuestions(
   env: Bindings,
   categories: CategoryRow[],
-  userId: string | null
+  userId: string | null,
+  forcedDifficulty?: number
 ): Promise<number[]> {
   const scores = userId
     ? (
@@ -155,14 +159,14 @@ export async function selectAdaptiveQuestions(
     const weights = categories.map((cat) => categoryWeight(scoreByCategory.get(cat.id)));
     const category = weightedPick(categories, weights);
     const score = scoreByCategory.get(category.id);
-    const difficulty = targetDifficulty(score);
+    const difficulty = forcedDifficulty ?? targetDifficulty(score);
 
     let questionId: number | null = null;
 
     if (userId && score && score.attempts > 0) {
       const reference = await worstAnsweredQuestion(env.DB, userId, category.id);
       if (reference) {
-        questionId = await findSimilarQuestion(env, reference, category.id, excludeIds);
+        questionId = await findSimilarQuestion(env, reference, category.id, excludeIds, forcedDifficulty);
       }
     }
 
