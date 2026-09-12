@@ -339,12 +339,12 @@ function renderFeedback(): string {
 
       ${
         evaluation.points_couverts.length
-          ? `<div><strong style="font-size:13px;">Points couverts</strong><ul style="margin:8px 0 0; padding-left:18px; font-size:13px; color:var(--color-text-muted);">${evaluation.points_couverts.map((p) => `<li>${escapeHtml(p)}</li>`).join('')}</ul></div>`
+          ? `<div><strong style="font-size:13px;">Les points clés à retenir</strong><ul style="margin:8px 0 0; padding-left:18px; font-size:13px; color:var(--color-text-muted);">${evaluation.points_couverts.map((p) => `<li>${escapeHtml(p)}</li>`).join('')}</ul></div>`
           : ''
       }
       ${
         evaluation.points_manquants.length
-          ? `<div><strong style="font-size:13px;">Axes à approfondir</strong><ul style="margin:8px 0 0; padding-left:18px; font-size:13px; color:var(--color-text-muted);">${evaluation.points_manquants.map((p) => `<li>${escapeHtml(p)}</li>`).join('')}</ul></div>`
+          ? `<div><strong style="font-size:13px;">Nuances supplémentaires</strong><ul style="margin:8px 0 0; padding-left:18px; font-size:13px; color:var(--color-text-muted);">${evaluation.points_manquants.map((p) => `<li>${escapeHtml(p)}</li>`).join('')}</ul></div>`
           : ''
       }
 
