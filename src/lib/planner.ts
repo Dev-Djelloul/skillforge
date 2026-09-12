@@ -1,4 +1,5 @@
 import type { Bindings } from '../types';
+import { extractResponseText } from './ai-response';
 
 const MODEL = '@cf/meta/llama-3.3-70b-instruct-fp8-fast';
 
@@ -33,5 +34,6 @@ Rédige un plan de révision court (5 à 8 lignes, en français, ton direct et m
     messages: [{ role: 'user', content: prompt }],
   });
 
-  return (result as { response?: string }).response ?? 'Plan de révision indisponible pour le moment.';
+  const text = extractResponseText(result);
+  return text || 'Plan de révision indisponible pour le moment.';
 }

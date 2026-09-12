@@ -1,4 +1,5 @@
 import type { Bindings, Evaluation, Question } from '../types';
+import { extractResponseText } from './ai-response';
 
 const MODEL = '@cf/meta/llama-3.3-70b-instruct-fp8-fast';
 
@@ -37,8 +38,7 @@ ${userAnswer}
     ],
   });
 
-  const raw = (result as { response?: string }).response ?? '';
-  return parseEvaluation(raw);
+  return parseEvaluation(extractResponseText(result));
 }
 
 function parseEvaluation(raw: string): Evaluation {

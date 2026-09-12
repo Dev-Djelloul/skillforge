@@ -52,6 +52,21 @@ body {
   padding: 24px 20px 64px;
 }
 
+/* Écran de question : la moitié droite est réservée au panneau lexique
+   (position fixed, en dehors du flux) — on décale le contenu pour ne
+   jamais passer dessous. */
+body:has(.question-layout) #app {
+  max-width: none;
+  margin: 0;
+  padding-left: 40px;
+  padding-right: 50vw;
+}
+@media (max-width: 760px) {
+  body:has(.question-layout) #app {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+}
 
 a { color: var(--color-primary); }
 a:hover { color: var(--color-primary-hover); }
@@ -210,13 +225,7 @@ textarea:focus-visible {
 
 .question-layout {
   margin: 24px 0;
-  padding-right: 324px;
-}
-
-@media (max-width: 760px) {
-  .question-layout {
-    padding-right: 0;
-  }
+  max-width: 700px;
 }
 
 .question-block {
@@ -231,14 +240,14 @@ textarea:focus-visible {
   top: 0;
   right: 0;
   height: 100vh;
-  width: 300px;
+  width: 50vw;
   overflow-y: auto;
   background: var(--color-primary);
   border-radius: 0;
-  padding: 32px 20px;
+  padding: 48px 56px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 20px;
   z-index: 5;
 }
 @media (max-width: 760px) {
@@ -253,14 +262,14 @@ textarea:focus-visible {
 
 .glossary-title {
   font-family: var(--font-display);
-  font-size: 14px;
+  font-size: 20px;
   font-weight: 700;
   color: #FFFFFF;
 }
 
 .glossary-empty {
   margin: 0;
-  font-size: 12px;
+  font-size: 14px;
   color: rgba(255, 255, 255, 0.75);
 }
 
@@ -268,18 +277,19 @@ textarea:focus-visible {
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 22px;
+  max-width: 480px;
 }
 
 .glossary-entry dt {
-  font-size: 13px;
+  font-size: 16px;
   font-weight: 600;
   color: var(--color-accent);
 }
 .glossary-entry dd {
-  margin: 4px 0 0;
-  font-size: 12px;
-  line-height: 1.5;
+  margin: 6px 0 0;
+  font-size: 14px;
+  line-height: 1.6;
   color: rgba(255, 255, 255, 0.85);
 }
 .question-block h2 {

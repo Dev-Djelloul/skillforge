@@ -119,14 +119,15 @@ function renderQuestion(): string {
 
   return `
     ${topBar()}
-    <div class="session-header">
-      <span>Question ${state.currentIndex + 1} / ${session.questions.length}</span>
-      <span class="muted">${progress}%</span>
-    </div>
-    <div class="progress-bar"><div style="width:${progress}%"></div></div>
 
     <div class="question-layout">
       <div class="question-block">
+        <div class="session-header">
+          <span>Question ${state.currentIndex + 1} / ${session.questions.length}</span>
+          <span class="muted">${progress}%</span>
+        </div>
+        <div class="progress-bar"><div style="width:${progress}%"></div></div>
+
         <div class="question-meta">${difficultyBadge(q.difficulty)}</div>
         <h2>${escapeHtml(q.prompt)}</h2>
 
