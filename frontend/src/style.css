@@ -163,17 +163,30 @@ a:hover { color: var(--color-primary-hover); }
   text-align: center;
 }
 .hero-center p { margin-left: auto; margin-right: auto; }
-.hero-center .families { max-width: 720px; margin-left: auto; margin-right: auto; }
+.hero-center .families { max-width: 900px; margin-left: auto; margin-right: auto; }
 .hero-center .btn-primary { align-self: center; }
 
 .families {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  grid-template-columns: repeat(4, minmax(160px, 1fr));
   gap: 12px;
   width: 100%;
   margin: 8px 0;
 }
-.families .card { padding: 16px; font-size: 13px; font-weight: 600; }
+@media (max-width: 640px) {
+  .families { grid-template-columns: repeat(2, 1fr); }
+}
+.families .card {
+  padding: 16px;
+  font-size: 13px;
+  font-weight: 600;
+  border-color: var(--color-primary);
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+.families .card:hover {
+  background: color-mix(in srgb, var(--color-primary) 10%, var(--color-surface));
+  transform: translateY(-2px);
+}
 .families .card span { display: block; font-size: 12px; font-weight: 400; color: var(--color-text-muted); margin-top: 4px; }
 
 button {
