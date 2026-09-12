@@ -395,6 +395,16 @@ button:focus-visible {
   line-height: 1.55;
   color: var(--color-text-muted);
 }
+.modal-actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 22px;
+}
+.modal-actions button {
+  flex: 1;
+  min-width: 0;
+}
 
 .progress-bar {
   height: 8px;

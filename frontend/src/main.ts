@@ -935,7 +935,7 @@ function renderConfirmDeleteModal(): string {
       <div class="modal-box" role="dialog" aria-modal="true">
         <strong>Supprimer cette session ?</strong>
         <p>Cette action est définitive : la session et ses réponses seront retirées de ton historique, sans possibilité de retour en arrière.</p>
-        <div class="actions-row" style="margin-top:20px;">
+        <div class="modal-actions">
           <button class="btn-secondary" id="confirm-delete-cancel">Annuler</button>
           <button class="btn-danger" id="confirm-delete-ok">Supprimer</button>
         </div>
