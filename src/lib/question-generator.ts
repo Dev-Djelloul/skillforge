@@ -1,4 +1,4 @@
-import type { Bindings } from '../types';
+import type { Bindings, Resource } from '../types';
 import { callOpenRouter } from './openrouter';
 import { embedText, questionEmbeddingText } from './embeddings';
 
@@ -12,6 +12,29 @@ interface GeneratedQuestion {
   prompt: string;
   rubric: string[];
   hint: string;
+  topic: string;
+}
+
+/**
+ * Ressources « pour aller plus loin » sous forme de liens de recherche
+ * (Wikipédia, YouTube) plutôt que de pages précises — l'IA ne peut pas
+ * garantir qu'une URL d'article qu'elle invente existe réellement, alors
+ * qu'un lien de recherche fonctionne toujours.
+ */
+function buildSearchResources(topic: string): Resource[] {
+  const query = encodeURIComponent(topic);
+  return [
+    {
+      type: 'article',
+      title: `Rechercher : ${topic}`,
+      url: `https://fr.wikipedia.org/w/index.php?search=${query}`,
+    },
+    {
+      type: 'video',
+      title: `Vidéos sur : ${topic}`,
+      url: `https://www.youtube.com/results?search_query=${query}`,
+    },
+  ];
 }
 
 async function generateQuestion(
@@ -23,7 +46,7 @@ async function generateQuestion(
   const systemPrompt = `Tu conçois des questions d'entretien technique pour un simulateur d'entraînement, dans le domaine : ${categoryLabel}.
 Génère UNE question originale et réaliste, de niveau ${DIFFICULTY_LABEL[difficulty] ?? 'intermédiaire'}, telle qu'un recruteur pourrait la poser.
 Réponds STRICTEMENT en JSON valide, sans texte autour :
-{"prompt": "<la question, en français>", "rubric": ["<point clé attendu 1>", "<point clé 2>", "<point clé 3>"], "hint": "<indice court qui oriente sans révéler la réponse>"}`;
+{"prompt": "<la question, en français>", "rubric": ["<point clé attendu 1>", "<point clé 2>", "<point clé 3>"], "hint": "<indice court qui oriente sans révéler la réponse>", "topic": "<2-4 mots-clés courts pour chercher plus d'infos sur ce sujet précis, en français>"}`;
 
   const avoidBlock = avoidPrompts.length
     ? `\n\nÉvite de reformuler ou de trop ressembler à ces questions déjà posées récemment :\n${avoidPrompts.map((p) => `- ${p}`).join('\n')}`
@@ -50,6 +73,7 @@ Réponds STRICTEMENT en JSON valide, sans texte autour :
     prompt: parsed.prompt,
     rubric: parsed.rubric,
     hint: typeof parsed.hint === 'string' ? parsed.hint : '',
+    topic: typeof parsed.topic === 'string' && parsed.topic ? parsed.topic : parsed.prompt.slice(0, 60),
   };
 }
 
@@ -81,11 +105,12 @@ export async function generateAndStoreQuestion(
       recent.results.map((r) => r.prompt)
     );
     const rubricJson = JSON.stringify(generated.rubric);
+    const resourcesJson = JSON.stringify(buildSearchResources(generated.topic));
 
     const insert = await env.DB.prepare(
-      `INSERT INTO questions (category_id, difficulty, prompt, rubric, hint, resources) VALUES (?, ?, ?, ?, ?, NULL)`
+      `INSERT INTO questions (category_id, difficulty, prompt, rubric, hint, resources) VALUES (?, ?, ?, ?, ?, ?)`
     )
-      .bind(categoryId, difficulty, generated.prompt, rubricJson, generated.hint || null)
+      .bind(categoryId, difficulty, generated.prompt, rubricJson, generated.hint || null, resourcesJson)
       .run();
 
     const newId = insert.meta.last_row_id;
