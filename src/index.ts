@@ -5,6 +5,7 @@ import { evaluateAnswer, evaluateFollowUp } from './lib/evaluator';
 import { generateRevisionPlan, type CategoryBreakdown } from './lib/planner';
 import { selectAdaptiveQuestions, type CategoryRow } from './lib/adaptive';
 import { embedText, questionEmbeddingText } from './lib/embeddings';
+import { generateGlossary } from './lib/glossary-generator';
 
 const app = new Hono<{ Bindings: Bindings }>();
 
@@ -114,6 +115,33 @@ app.get('/api/questions/:id/hint', async (c) => {
   }
 
   return c.json({ hint: question.hint ?? null });
+});
+
+// Lexique de la question, généré par IA à la demande et mis en cache en
+// base au premier appel (les appels suivants pour la même question sont
+// instantanés et gratuits — pas de régénération à chaque affichage).
+app.get('/api/questions/:id/glossary', async (c) => {
+  const questionId = c.req.param('id');
+
+  const question = await c.env.DB.prepare(`SELECT prompt, glossary FROM questions WHERE id = ?`)
+    .bind(questionId)
+    .first<{ prompt: string; glossary: string | null }>();
+
+  if (!question) {
+    return c.json({ error: 'Question introuvable' }, 404);
+  }
+
+  if (question.glossary) {
+    return c.json({ terms: JSON.parse(question.glossary) });
+  }
+
+  const terms = await generateGlossary(c.env, question.prompt);
+
+  await c.env.DB.prepare(`UPDATE questions SET glossary = ? WHERE id = ?`)
+    .bind(JSON.stringify(terms), questionId)
+    .run();
+
+  return c.json({ terms });
 });
 
 // Soumet une réponse à une question de la session et déclenche l'évaluation LLM-as-judge

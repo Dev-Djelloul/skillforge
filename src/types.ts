@@ -14,12 +14,18 @@ export interface Question {
   rubric: string; // JSON stringifié : string[]
   hint: string | null;
   resources: string | null; // JSON stringifié : Resource[]
+  glossary?: string | null; // JSON stringifié : GlossaryTerm[]
 }
 
 export interface Resource {
   type: 'article' | 'video';
   title: string;
   url: string;
+}
+
+export interface GlossaryTerm {
+  term: string;
+  definition: string;
 }
 
 export interface SessionItem {

@@ -126,6 +126,15 @@ export function getHint(questionId: number): Promise<{ hint: string | null }> {
   return request(`/api/questions/${questionId}/hint`);
 }
 
+export interface GlossaryTerm {
+  term: string;
+  definition: string;
+}
+
+export function getGlossary(questionId: number): Promise<{ terms: GlossaryTerm[] }> {
+  return request(`/api/questions/${questionId}/glossary`);
+}
+
 export interface ProgressCategory {
   category_slug: string;
   category_label: string;

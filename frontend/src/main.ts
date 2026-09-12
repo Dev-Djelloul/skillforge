@@ -8,6 +8,8 @@ import {
   getHistory,
   getSessionDetail,
   getProgressTimeline,
+  getGlossary,
+  type GlossaryTerm,
   type StartSessionResponse,
   type AnswerResponse,
   type CompleteSessionResponse,
@@ -18,7 +20,6 @@ import {
   type Resource,
   type SessionSetup,
 } from './api';
-import { findRelevantTerms } from './glossary';
 
 const CATEGORIES = [
   { slug: 'ia-ml', label: 'IA & Machine Learning' },
@@ -67,6 +68,9 @@ interface AppState {
   followUpBusy: boolean;
   shareMessage: string | null;
   sharedView: boolean;
+  glossaryTerms: GlossaryTerm[] | null;
+  glossaryLoading: boolean;
+  glossaryQuestionId: number | null;
 }
 
 const state: AppState = {
@@ -92,6 +96,9 @@ const state: AppState = {
   followUpBusy: false,
   shareMessage: null,
   sharedView: false,
+  glossaryTerms: null,
+  glossaryLoading: false,
+  glossaryQuestionId: null,
 };
 
 let timerHandle: ReturnType<typeof setInterval> | null = null;
@@ -230,13 +237,22 @@ function renderSetup(): string {
   `;
 }
 
-function renderGlossaryPanel(prompt: string, categorySlug: string): string {
-  const terms = findRelevantTerms(prompt, categorySlug);
+function renderGlossaryPanel(): string {
+  if (state.glossaryLoading) {
+    return `
+      <aside class="glossary-panel">
+        <div class="glossary-title">Lexique</div>
+        <p class="glossary-empty">Chargement du lexique…</p>
+      </aside>
+    `;
+  }
+
+  const terms = state.glossaryTerms ?? [];
   if (terms.length === 0) {
     return `
       <aside class="glossary-panel">
         <div class="glossary-title">Lexique</div>
-        <p class="glossary-empty">Aucun terme référencé pour cette question.</p>
+        <p class="glossary-empty">Aucun terme technique particulier pour cette question.</p>
       </aside>
     `;
   }
@@ -302,7 +318,7 @@ function renderQuestion(): string {
         </div>
       </div>
 
-      ${renderGlossaryPanel(q.prompt, q.category_slug)}
+      ${renderGlossaryPanel()}
     </div>
   `;
 }
@@ -743,6 +759,31 @@ async function onConfirmSetup(): Promise<void> {
     render();
     if (state.screen === 'question') {
       startQuestionTimer(state.session!.questions[0].difficulty);
+      loadGlossaryForCurrentQuestion();
+    }
+  }
+}
+
+async function loadGlossaryForCurrentQuestion(): Promise<void> {
+  const session = state.session!;
+  const questionId = session.questions[state.currentIndex].question_id;
+  state.glossaryQuestionId = questionId;
+  state.glossaryTerms = null;
+  state.glossaryLoading = true;
+  render();
+  try {
+    const { terms } = await getGlossary(questionId);
+    if (state.glossaryQuestionId === questionId) {
+      state.glossaryTerms = terms;
+    }
+  } catch {
+    if (state.glossaryQuestionId === questionId) {
+      state.glossaryTerms = [];
+    }
+  } finally {
+    if (state.glossaryQuestionId === questionId) {
+      state.glossaryLoading = false;
+      render();
     }
   }
 }
@@ -829,6 +870,7 @@ async function onNext(): Promise<void> {
     state.timeRemaining = TIME_BY_DIFFICULTY[nextQuestion.difficulty] ?? 300;
     render();
     startQuestionTimer(nextQuestion.difficulty);
+    loadGlossaryForCurrentQuestion();
     return;
   }
 
@@ -918,6 +960,9 @@ function onRestart(): void {
   state.followUpFeedback = null;
   state.shareMessage = null;
   state.sharedView = false;
+  state.glossaryTerms = null;
+  state.glossaryLoading = false;
+  state.glossaryQuestionId = null;
   history.replaceState(null, '', window.location.pathname);
   render();
 }
