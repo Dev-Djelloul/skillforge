@@ -232,6 +232,34 @@ app.get('/api/progress/:client_id', async (c) => {
   return c.json({ client_id: clientId, categories: scores.results });
 });
 
+// Historique des sessions d'un client_id — une session terminée n'était
+// jusqu'ici consultable que via son URL, perdue dès qu'on quittait la page.
+app.get('/api/history/:client_id', async (c) => {
+  const clientId = c.req.param('client_id');
+
+  const sessions = await c.env.DB.prepare(
+    `SELECT s.id, s.status, s.started_at, s.finished_at,
+            AVG(si.score) AS avg_score, COUNT(si.score) AS answered_count
+     FROM sessions s
+     LEFT JOIN session_items si ON si.session_id = s.id AND si.score IS NOT NULL
+     WHERE s.user_id = ?
+     GROUP BY s.id
+     ORDER BY s.started_at DESC
+     LIMIT 30`
+  )
+    .bind(clientId)
+    .all<{
+      id: string;
+      status: string;
+      started_at: string;
+      finished_at: string | null;
+      avg_score: number | null;
+      answered_count: number;
+    }>();
+
+  return c.json({ client_id: clientId, sessions: sessions.results });
+});
+
 // Réindexe toutes les questions dans Vectorize (embeddings du texte de la
 // question + de sa rubrique). À exécuter une fois après chaque changement de
 // la banque de questions (nouveau seed, questions ajoutées/modifiées).

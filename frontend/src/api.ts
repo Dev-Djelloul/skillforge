@@ -8,7 +8,7 @@ const CLIENT_ID_KEY = 'skillforge_client_id';
  * stocké côté navigateur. Permet au backend de suivre les scores par
  * catégorie d'une session à l'autre et d'adapter la sélection des questions.
  */
-function getClientId(): string {
+export function getClientId(): string {
   try {
     const existing = localStorage.getItem(CLIENT_ID_KEY);
     if (existing) return existing;
@@ -100,4 +100,62 @@ export function completeSession(sessionId: string): Promise<CompleteSessionRespo
 
 export function getHint(questionId: number): Promise<{ hint: string | null }> {
   return request(`/api/questions/${questionId}/hint`);
+}
+
+export interface ProgressCategory {
+  category_slug: string;
+  category_label: string;
+  avg_score: number;
+  attempts: number;
+}
+
+export interface ProgressResponse {
+  client_id: string;
+  categories: ProgressCategory[];
+}
+
+export function getProgress(): Promise<ProgressResponse> {
+  return request(`/api/progress/${getClientId()}`);
+}
+
+export interface HistoryEntry {
+  id: string;
+  status: string;
+  started_at: string;
+  finished_at: string | null;
+  avg_score: number | null;
+  answered_count: number;
+}
+
+export interface HistoryResponse {
+  client_id: string;
+  sessions: HistoryEntry[];
+}
+
+export function getHistory(): Promise<HistoryResponse> {
+  return request(`/api/history/${getClientId()}`);
+}
+
+export interface SessionDetailItem {
+  id: number;
+  session_id: string;
+  question_id: number;
+  position: number;
+  user_answer: string | null;
+  score: number | null;
+  feedback: string | null;
+  answered_at: string | null;
+  prompt: string;
+  difficulty: number;
+  hint: string | null;
+  resources: Resource[];
+}
+
+export interface SessionDetailResponse {
+  session: { id: string; status: string; started_at: string; finished_at: string | null };
+  items: SessionDetailItem[];
+}
+
+export function getSessionDetail(sessionId: string): Promise<SessionDetailResponse> {
+  return request(`/api/sessions/${sessionId}`);
 }

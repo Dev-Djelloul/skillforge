@@ -3,9 +3,15 @@ import {
   submitAnswer,
   completeSession,
   getHint,
+  getProgress,
+  getHistory,
+  getSessionDetail,
   type StartSessionResponse,
   type AnswerResponse,
   type CompleteSessionResponse,
+  type ProgressResponse,
+  type HistoryResponse,
+  type SessionDetailResponse,
 } from './api';
 import { findRelevantTerms } from './glossary';
 
@@ -22,7 +28,7 @@ const DIFFICULTY_LABEL: Record<number, string> = {
   3: 'Niveau 3 · Avancé',
 };
 
-type Screen = 'start' | 'question' | 'feedback' | 'results' | 'error';
+type Screen = 'start' | 'question' | 'feedback' | 'results' | 'error' | 'progress' | 'history' | 'session-detail';
 
 interface AppState {
   screen: Screen;
@@ -34,6 +40,9 @@ interface AppState {
   results: CompleteSessionResponse | null;
   errorMessage: string | null;
   busy: boolean;
+  progressData: ProgressResponse | null;
+  historyData: HistoryResponse | null;
+  sessionDetail: SessionDetailResponse | null;
 }
 
 const state: AppState = {
@@ -46,14 +55,25 @@ const state: AppState = {
   results: null,
   errorMessage: null,
   busy: false,
+  progressData: null,
+  historyData: null,
+  sessionDetail: null,
 };
 
 const app = document.getElementById('app')!;
 
-function topBar(): string {
+function topBar(showNav = true): string {
   return `
     <div class="top-bar">
-      <div class="logo">${LOGO_SVG}<span>Skill<span class="accent">Forge</span></span></div>
+      <div class="logo" id="logo-home">${LOGO_SVG}<span>Skill<span class="accent">Forge</span></span></div>
+      ${
+        showNav
+          ? `<nav class="top-nav">
+              <button class="nav-link" id="nav-progress-btn">Mes progrès</button>
+              <button class="nav-link" id="nav-history-btn">Historique</button>
+            </nav>`
+          : ''
+      }
     </div>
   `;
 }
@@ -120,7 +140,7 @@ function renderQuestion(): string {
   return `
     <div class="page-split">
       <div class="page-split-main">
-        ${topBar()}
+        ${topBar(false)}
 
         <div class="question-block">
           <div class="session-header">
@@ -165,7 +185,7 @@ function renderFeedback(): string {
   const { evaluation, resources } = answer;
 
   return `
-    ${topBar()}
+    ${topBar(false)}
     <div class="card feedback-card">
       <div class="score-line">
         <span class="value">${evaluation.score}</span>
@@ -235,8 +255,8 @@ function renderResults(): string {
     </div>
 
     <div class="actions-row" style="margin-top:24px;">
-      <span></span>
-      <button class="btn-primary" id="restart-btn">Nouvelle session</button>
+      <button class="btn-secondary no-print" id="export-pdf-btn">Télécharger mon bilan (PDF)</button>
+      <button class="btn-primary no-print" id="restart-btn">Nouvelle session</button>
     </div>
   `;
 }
@@ -246,6 +266,125 @@ function renderError(): string {
     ${topBar()}
     <div class="error-box">${escapeHtml(state.errorMessage ?? 'Une erreur est survenue.')}</div>
     <button class="btn-secondary" id="retry-btn" style="margin-top:16px;">Réessayer</button>
+  `;
+}
+
+function formatDate(iso: string): string {
+  return new Date(iso.replace(' ', 'T') + 'Z').toLocaleString('fr-FR', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+function renderProgress(): string {
+  const data = state.progressData;
+  const categories = data?.categories ?? [];
+
+  return `
+    ${topBar()}
+    <div class="hero" style="padding-top:24px; padding-bottom:24px;">
+      <h1 style="font-size:28px;">Mes progrès</h1>
+      <p>Score moyen par famille de questions, sur l'ensemble de vos sessions.</p>
+    </div>
+
+    ${
+      categories.length === 0
+        ? `<div class="card"><p style="margin:0; font-size:14px; color:var(--color-text-muted);">Aucune donnée pour l'instant — termine une première session pour voir apparaître ta progression ici.</p></div>`
+        : `<div class="card" style="display:flex; flex-direction:column; gap:18px;">
+            ${categories
+              .map((c) => {
+                const pct = Math.round(c.avg_score);
+                const color = pct >= 75 ? 'var(--color-level-1)' : pct >= 50 ? 'var(--color-level-2)' : 'var(--color-level-3)';
+                return `
+                  <div class="breakdown-row">
+                    <div class="labels">
+                      <span>${escapeHtml(c.category_label)}</span>
+                      <span>${pct}% · ${c.attempts} question${c.attempts > 1 ? 's' : ''}</span>
+                    </div>
+                    <div class="mini-bar"><div style="width:${pct}%; background:${color};"></div></div>
+                  </div>
+                `;
+              })
+              .join('')}
+          </div>`
+    }
+
+    <div class="actions-row" style="margin-top:24px;">
+      <span></span>
+      <button class="btn-primary" id="start-btn" ${state.busy ? 'disabled' : ''}>
+        ${state.busy ? 'Préparation…' : 'Commencer une session'}
+      </button>
+    </div>
+  `;
+}
+
+function renderHistory(): string {
+  const sessions = state.historyData?.sessions ?? [];
+
+  return `
+    ${topBar()}
+    <div class="hero" style="padding-top:24px; padding-bottom:24px;">
+      <h1 style="font-size:28px;">Historique des sessions</h1>
+      <p>Retrouve le détail de tes sessions précédentes.</p>
+    </div>
+
+    ${
+      sessions.length === 0
+        ? `<div class="card"><p style="margin:0; font-size:14px; color:var(--color-text-muted);">Aucune session pour l'instant.</p></div>`
+        : `<div style="display:flex; flex-direction:column; gap:10px;">
+            ${sessions
+              .map((s) => {
+                const scoreLabel = s.avg_score !== null ? `${Math.round(s.avg_score)}/100` : '—';
+                const statusLabel = s.status === 'completed' ? 'Terminée' : 'Interrompue';
+                return `
+                  <button class="card session-row" data-session-id="${escapeAttr(s.id)}" style="text-align:left; cursor:pointer; display:flex; justify-content:space-between; align-items:center; width:100%; font-family:inherit;">
+                    <div>
+                      <div style="font-size:13px; font-weight:600; color:var(--color-text);">${formatDate(s.started_at)}</div>
+                      <div style="font-size:12px; color:var(--color-text-subtle); margin-top:2px;">${statusLabel} · ${s.answered_count} réponse${s.answered_count > 1 ? 's' : ''}</div>
+                    </div>
+                    <div class="disp" style="font-size:20px; font-weight:700; color:var(--color-accent);">${scoreLabel}</div>
+                  </button>
+                `;
+              })
+              .join('')}
+          </div>`
+    }
+  `;
+}
+
+function renderSessionDetail(): string {
+  const detail = state.sessionDetail;
+  if (!detail) return `${topBar()}<div class="loading">Chargement…</div>`;
+
+  return `
+    ${topBar()}
+    <div class="hero" style="padding-top:24px; padding-bottom:16px;">
+      <button class="btn-ghost" id="back-to-history-btn" style="padding:8px 16px; font-size:12px;">← Retour à l'historique</button>
+      <h1 style="font-size:24px; margin-top:8px;">Session du ${formatDate(detail.session.started_at)}</h1>
+    </div>
+
+    <div style="display:flex; flex-direction:column; gap:14px;">
+      ${detail.items
+        .map(
+          (item, i) => `
+            <div class="card" style="display:flex; flex-direction:column; gap:10px;">
+              <div class="question-meta">${difficultyBadge(item.difficulty)}</div>
+              <div style="font-size:14px; font-weight:600;">Q${i + 1}. ${escapeHtml(item.prompt)}</div>
+              ${item.user_answer ? `<p style="margin:0; font-size:13px; color:var(--color-text-muted); white-space:pre-line;">${escapeHtml(item.user_answer)}</p>` : `<p style="margin:0; font-size:13px; color:var(--color-text-subtle); font-style:italic;">Non répondue</p>`}
+              ${
+                item.score !== null
+                  ? `<div class="score-line"><span class="value" style="font-size:24px;">${item.score}</span><span class="denom">/ 100</span></div>
+                     ${item.feedback ? `<p style="margin:0; font-size:12px; color:var(--color-text-muted);">${escapeHtml(item.feedback)}</p>` : ''}`
+                  : ''
+              }
+            </div>
+          `
+        )
+        .join('')}
+    </div>
   `;
 }
 
@@ -264,6 +403,15 @@ function render(): void {
     case 'results':
       html = renderResults();
       break;
+    case 'progress':
+      html = renderProgress();
+      break;
+    case 'history':
+      html = renderHistory();
+      break;
+    case 'session-detail':
+      html = renderSessionDetail();
+      break;
     default:
       html = renderError();
   }
@@ -278,6 +426,14 @@ function attachHandlers(): void {
   document.getElementById('next-btn')?.addEventListener('click', onNext);
   document.getElementById('restart-btn')?.addEventListener('click', onRestart);
   document.getElementById('retry-btn')?.addEventListener('click', onRestart);
+  document.getElementById('export-pdf-btn')?.addEventListener('click', () => window.print());
+  document.getElementById('logo-home')?.addEventListener('click', onRestart);
+  document.getElementById('nav-progress-btn')?.addEventListener('click', onNavProgress);
+  document.getElementById('nav-history-btn')?.addEventListener('click', onNavHistory);
+  document.getElementById('back-to-history-btn')?.addEventListener('click', onNavHistory);
+  document.querySelectorAll<HTMLButtonElement>('.session-row').forEach((row) => {
+    row.addEventListener('click', () => onViewSessionDetail(row.dataset.sessionId!));
+  });
 }
 
 async function onStart(): Promise<void> {
@@ -362,6 +518,46 @@ async function onNext(): Promise<void> {
     state.screen = 'error';
   } finally {
     state.busy = false;
+    render();
+  }
+}
+
+async function onNavProgress(): Promise<void> {
+  state.screen = 'progress';
+  state.errorMessage = null;
+  render();
+  try {
+    state.progressData = await getProgress();
+  } catch (err) {
+    state.errorMessage = err instanceof Error ? err.message : 'Impossible de charger la progression.';
+  } finally {
+    render();
+  }
+}
+
+async function onNavHistory(): Promise<void> {
+  state.screen = 'history';
+  state.errorMessage = null;
+  render();
+  try {
+    state.historyData = await getHistory();
+  } catch (err) {
+    state.errorMessage = err instanceof Error ? err.message : 'Impossible de charger l’historique.';
+  } finally {
+    render();
+  }
+}
+
+async function onViewSessionDetail(sessionId: string): Promise<void> {
+  state.screen = 'session-detail';
+  state.sessionDetail = null;
+  render();
+  try {
+    state.sessionDetail = await getSessionDetail(sessionId);
+  } catch (err) {
+    state.errorMessage = err instanceof Error ? err.message : 'Impossible de charger cette session.';
+    state.screen = 'error';
+  } finally {
     render();
   }
 }
