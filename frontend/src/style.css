@@ -462,6 +462,13 @@ textarea:focus-visible {
   0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-primary) 35%, transparent); }
   50% { box-shadow: 0 0 0 8px transparent; }
 }
+.mic-error {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--color-level-3);
+  min-height: 1em;
+}
+.mic-error:empty { display: none; }
 
 /* Grille plein-bleed à deux colonnes égales : contenu de la question à
    gauche, lexique à droite. Une vraie grille CSS plutôt qu'un

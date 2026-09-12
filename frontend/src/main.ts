@@ -188,9 +188,18 @@ type SpeechRecognitionLike = {
   interimResults: boolean;
   onresult: ((event: any) => void) | null;
   onend: (() => void) | null;
-  onerror: (() => void) | null;
+  onerror: ((event: any) => void) | null;
   start: () => void;
   stop: () => void;
+};
+
+const SPEECH_ERROR_LABEL: Record<string, string> = {
+  'not-allowed': "Accès au micro refusé — autorise-le dans les réglages du site (icône de cadenas dans la barre d'adresse), puis réessaie.",
+  'service-not-allowed': 'Le service de reconnaissance vocale du navigateur a refusé la demande.',
+  'no-speech': "Aucune voix détectée — réessaie en parlant juste après avoir cliqué sur le micro.",
+  'audio-capture': 'Aucun microphone détecté sur cet appareil.',
+  network: 'Problème réseau avec le service de reconnaissance vocale — réessaie dans un instant.',
+  aborted: '',
 };
 
 function getSpeechRecognitionCtor(): (new () => SpeechRecognitionLike) | null {
@@ -203,6 +212,11 @@ function isSpeechRecognitionSupported(): boolean {
 }
 
 let activeRecognition: SpeechRecognitionLike | null = null;
+
+function setMicError(message: string): void {
+  const el = document.getElementById('mic-error');
+  if (el) el.textContent = message;
+}
 
 function toggleVoiceDictation(): void {
   const micBtn = document.getElementById('mic-btn');
@@ -217,6 +231,7 @@ function toggleVoiceDictation(): void {
   const Ctor = getSpeechRecognitionCtor();
   if (!Ctor) return;
 
+  setMicError('');
   const recognition = new Ctor();
   recognition.lang = 'fr-FR';
   recognition.continuous = true;
@@ -232,9 +247,11 @@ function toggleVoiceDictation(): void {
     }
     textarea.value = (baseText ? baseText + ' ' : '') + finalTranscript;
   };
-  recognition.onerror = () => {
+  recognition.onerror = (event: any) => {
     activeRecognition = null;
     micBtn.classList.remove('mic-btn-active');
+    const code = event?.error as string | undefined;
+    setMicError((code && SPEECH_ERROR_LABEL[code]) ?? `Erreur de dictée vocale (${code ?? 'inconnue'}).`);
   };
   recognition.onend = () => {
     activeRecognition = null;
@@ -478,6 +495,7 @@ function renderQuestion(): string {
                 : ''
             }
           </div>
+          ${isSpeechRecognitionSupported() ? `<p id="mic-error" class="mic-error"></p>` : ''}
 
           ${state.errorMessage ? `<div class="error-box">${escapeHtml(state.errorMessage)}</div>` : ''}
 
