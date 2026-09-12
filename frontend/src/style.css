@@ -385,16 +385,14 @@ textarea:focus-visible {
   gap: 16px;
 }
 .feedback-recruiter-icon {
-  width: 150px;
-  height: 150px;
-  min-width: 150px;
+  width: 72px;
+  height: 72px;
+  min-width: 72px;
   flex-shrink: 0;
-  transform: rotate(-6deg);
-  filter: drop-shadow(0 8px 16px color-mix(in srgb, var(--color-primary) 35%, transparent));
 }
 @media (max-width: 520px) {
   .feedback-header { flex-direction: column-reverse; align-items: flex-start; }
-  .feedback-recruiter-icon { width: 100px; height: 100px; min-width: 100px; }
+  .feedback-recruiter-icon { width: 56px; height: 56px; min-width: 56px; }
 }
 
 .resources {
