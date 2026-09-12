@@ -334,7 +334,7 @@ function renderFeedback(): string {
       </div>
       <div class="feedback-answer-row">
         <img src="/img/icons8-recruitment-96.png" alt="" class="feedback-recruiter-icon" />
-        <p style="margin:0; font-size:14px; line-height:1.6; color:var(--color-text-muted);">${escapeHtml(evaluation.feedback)}</p>
+        <p class="feedback-answer-text">${escapeHtml(evaluation.feedback)}</p>
       </div>
 
       ${

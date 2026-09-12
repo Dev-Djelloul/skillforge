@@ -32,6 +32,7 @@ Rédige un plan de révision court (5 à 8 lignes, en français, ton direct et m
 
   const result = await ai.run(MODEL, {
     messages: [{ role: 'user', content: prompt }],
+    max_tokens: 512,
   });
 
   const text = extractResponseText(result);

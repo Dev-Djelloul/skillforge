@@ -44,6 +44,10 @@ ${userAnswer}
       { role: 'system', content: systemPrompt },
       { role: 'user', content: userPrompt },
     ],
+    // La réponse JSON (réponse complète + conseils + listes) dépasse la
+    // limite par défaut du modèle et se retrouvait tronquée, cassant le
+    // parsing JSON.
+    max_tokens: 1024,
   });
 
   return parseEvaluation(extractResponseText(result));
@@ -75,6 +79,7 @@ Donne un feedback court (2-3 phrases, en français, ton direct et constructif) s
 
   const result = await ai.run(MODEL, {
     messages: [{ role: 'user', content: prompt }],
+    max_tokens: 512,
   });
 
   const text = extractResponseText(result);
