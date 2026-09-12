@@ -167,20 +167,34 @@ export async function selectAdaptiveQuestions(
     : [];
   const scoreByCategory = new Map(scores.map((s) => [s.category_id, s]));
 
-  const selected: number[] = [];
-  const excludeIds = new Set<number>();
-
-  for (let i = 0; i < questionsPerSession; i++) {
+  // Choix de la catégorie/difficulté de chaque slot d'abord (rapide, pas
+  // d'appel réseau), puis toutes les générations IA sont lancées EN
+  // PARALLÈLE : elles sont indépendantes les unes des autres, et les
+  // enchaîner séquentiellement multipliait le temps d'attente au démarrage
+  // d'une session par le nombre de questions (2-5s x 6, voire x 12 en mode
+  // entretien complet).
+  const slots = Array.from({ length: questionsPerSession }, () => {
     const weights = categories.map((cat) => categoryWeight(scoreByCategory.get(cat.id)));
     const category = weightedPick(categories, weights);
     const score = scoreByCategory.get(category.id);
     const difficulty = forcedDifficulty ?? targetDifficulty(score);
+    return { category, score, difficulty };
+  });
 
-    let questionId: number | null = null;
+  const generatedIds = await Promise.all(
+    slots.map((slot, i) =>
+      AI_GENERATED_SLOTS.has(i)
+        ? generateAndStoreQuestion(env, slot.category.id, slot.category.label, slot.difficulty)
+        : Promise.resolve(null)
+    )
+  );
 
-    if (AI_GENERATED_SLOTS.has(i)) {
-      questionId = await generateAndStoreQuestion(env, category.id, category.label, difficulty);
-    }
+  const selected: number[] = [];
+  const excludeIds = new Set<number>();
+
+  for (let i = 0; i < slots.length; i++) {
+    const { category, score, difficulty } = slots[i];
+    let questionId: number | null = generatedIds[i];
 
     if (!questionId && userId && score && score.attempts > 0) {
       const reference = await worstAnsweredQuestion(env.DB, userId, category.id);
