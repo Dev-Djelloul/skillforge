@@ -7,6 +7,7 @@ import {
   getProgress,
   getHistory,
   getSessionDetail,
+  deleteSession,
   getProgressTimeline,
   getGlossary,
   type GlossaryTerm,
@@ -770,13 +771,16 @@ function renderHistory(): string {
                 const scoreLabel = s.avg_score !== null ? `${Math.round(s.avg_score)}/100` : '—';
                 const statusLabel = s.status === 'completed' ? 'Terminée' : 'Interrompue';
                 return `
-                  <button class="card session-row" data-session-id="${escapeAttr(s.id)}" style="text-align:left; cursor:pointer; display:flex; justify-content:space-between; align-items:center; width:100%; font-family:inherit;">
-                    <div>
-                      <div style="font-size:13px; font-weight:600; color:var(--color-text);">${formatDate(s.started_at)}</div>
-                      <div style="font-size:12px; color:var(--color-text-subtle); margin-top:2px;">${statusLabel} · ${s.answered_count} réponse${s.answered_count > 1 ? 's' : ''}</div>
-                    </div>
-                    <div class="disp" style="font-size:20px; font-weight:700; color:var(--color-accent);">${scoreLabel}</div>
-                  </button>
+                  <div class="card session-row" style="display:flex; justify-content:space-between; align-items:center; gap:12px;">
+                    <button class="session-row-main" data-session-id="${escapeAttr(s.id)}" style="text-align:left; cursor:pointer; background:none; border:none; padding:0; font-family:inherit; flex:1; display:flex; justify-content:space-between; align-items:center;">
+                      <div>
+                        <div style="font-size:13px; font-weight:600; color:var(--color-text);">${formatDate(s.started_at)}</div>
+                        <div style="font-size:12px; color:var(--color-text-subtle); margin-top:2px;">${statusLabel} · ${s.answered_count} réponse${s.answered_count > 1 ? 's' : ''}</div>
+                      </div>
+                      <div class="disp" style="font-size:20px; font-weight:700; color:var(--color-accent);">${scoreLabel}</div>
+                    </button>
+                    <button class="session-delete-btn" data-session-id="${escapeAttr(s.id)}" title="Supprimer cette session">🗑</button>
+                  </div>
                 `;
               })
               .join('')}
@@ -873,8 +877,11 @@ function attachHandlers(): void {
   document.getElementById('nav-history-btn')?.addEventListener('click', onNavHistory);
   document.getElementById('back-to-history-btn')?.addEventListener('click', onNavHistory);
   document.getElementById('shared-cta')?.addEventListener('click', onRestart);
-  document.querySelectorAll<HTMLButtonElement>('.session-row').forEach((row) => {
+  document.querySelectorAll<HTMLButtonElement>('.session-row-main').forEach((row) => {
     row.addEventListener('click', () => onViewSessionDetail(row.dataset.sessionId!));
+  });
+  document.querySelectorAll<HTMLButtonElement>('.session-delete-btn').forEach((btn) => {
+    btn.addEventListener('click', () => onDeleteSession(btn.dataset.sessionId!));
   });
   document.querySelectorAll<HTMLInputElement>('.setup-categories input[data-category]').forEach((input) => {
     input.addEventListener('change', () => {
@@ -1101,6 +1108,24 @@ async function onNavHistory(): Promise<void> {
   } catch (err) {
     state.errorMessage = err instanceof Error ? err.message : 'Impossible de charger l’historique.';
   } finally {
+    render();
+  }
+}
+
+async function onDeleteSession(sessionId: string): Promise<void> {
+  if (!window.confirm('Supprimer définitivement cette session de ton historique ?')) return;
+
+  try {
+    await deleteSession(sessionId);
+    if (state.historyData) {
+      state.historyData = {
+        ...state.historyData,
+        sessions: state.historyData.sessions.filter((s) => s.id !== sessionId),
+      };
+    }
+    render();
+  } catch (err) {
+    state.errorMessage = err instanceof Error ? err.message : 'Impossible de supprimer cette session.';
     render();
   }
 }

@@ -315,6 +315,32 @@ app.get('/api/sessions/:id', async (c) => {
   return c.json({ session, items: itemsWithParsedResources });
 });
 
+// Supprime une session de l'historique d'un candidat. Le client_id est
+// vérifié contre le propriétaire de la session pour empêcher un tiers qui
+// connaîtrait l'UUID d'une session de supprimer l'historique de quelqu'un
+// d'autre.
+app.delete('/api/sessions/:id', async (c) => {
+  const sessionId = c.req.param('id');
+  const body = await c.req.json<{ client_id?: string }>().catch(() => ({}) as { client_id?: string });
+
+  const session = await c.env.DB.prepare(`SELECT user_id FROM sessions WHERE id = ?`)
+    .bind(sessionId)
+    .first<{ user_id: string | null }>();
+
+  if (!session) {
+    return c.json({ error: 'Session introuvable' }, 404);
+  }
+
+  if (!session.user_id || session.user_id !== body.client_id) {
+    return c.json({ error: 'Non autorisé' }, 403);
+  }
+
+  await c.env.DB.prepare(`DELETE FROM session_items WHERE session_id = ?`).bind(sessionId).run();
+  await c.env.DB.prepare(`DELETE FROM sessions WHERE id = ?`).bind(sessionId).run();
+
+  return c.json({ deleted: true });
+});
+
 // Progression d'un client_id (utilisateur anonyme mais persistant côté
 // navigateur) par catégorie — sert de base à un futur écran de progression.
 app.get('/api/progress/:client_id', async (c) => {

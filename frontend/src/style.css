@@ -111,6 +111,27 @@ a:hover { color: var(--color-primary-hover); }
 }
 .session-row:hover { border-color: var(--color-primary); }
 
+.session-delete-btn {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1.5px solid var(--color-border);
+  background: transparent;
+  color: var(--color-text-subtle);
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+}
+.session-delete-btn:hover {
+  border-color: var(--color-level-3);
+  color: var(--color-level-3);
+  background: color-mix(in srgb, var(--color-level-3) 10%, transparent);
+}
+
 .badge {
   display: inline-flex;
   align-items: center;

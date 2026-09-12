@@ -211,3 +211,10 @@ export interface SessionDetailResponse {
 export function getSessionDetail(sessionId: string): Promise<SessionDetailResponse> {
   return request(`/api/sessions/${sessionId}`);
 }
+
+export function deleteSession(sessionId: string): Promise<{ deleted: boolean }> {
+  return request(`/api/sessions/${sessionId}`, {
+    method: 'DELETE',
+    body: JSON.stringify({ client_id: getClientId() }),
+  });
+}
