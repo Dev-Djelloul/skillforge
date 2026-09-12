@@ -714,12 +714,12 @@ function renderTimelineChart(): string {
   });
 
   return `
-    <div class="card" style="margin-top:20px; display:flex; flex-direction:column; gap:12px;">
+    <div class="card" style="margin-top:20px; display:flex; flex-direction:column; align-items:center; gap:12px; text-align:center;">
       <strong style="font-size:14px;">Évolution du score dans le temps</strong>
-      <svg viewBox="0 0 ${width} ${height}" style="width:100%; height:auto;" preserveAspectRatio="none">
+      <svg viewBox="0 0 ${width} ${height}" style="width:100%; max-width:560px; height:auto;" preserveAspectRatio="none">
         ${lines.map((l) => `<polyline points="${l.path}" fill="none" stroke="${l.color}" stroke-width="2" />`).join('')}
       </svg>
-      <div style="display:flex; flex-wrap:wrap; gap:12px;">
+      <div style="display:flex; flex-wrap:wrap; justify-content:center; gap:12px;">
         ${lines
           .map(
             (l) =>
@@ -755,14 +755,14 @@ function renderProgress(): string {
 
   return `
     ${topBar()}
-    <div class="hero" style="padding-top:24px; padding-bottom:24px;">
+    <div class="hero hero-center" style="padding-top:24px; padding-bottom:24px;">
       <h1 style="font-size:28px;">Mes progrès</h1>
       <p>Score moyen par famille de questions, sur l'ensemble de vos sessions.</p>
     </div>
 
     ${
       categories.length === 0
-        ? `<div class="card"><p style="margin:0; font-size:14px; color:var(--color-text-muted);">Aucune donnée pour l'instant — termine une première session pour voir apparaître ta progression ici.</p></div>`
+        ? `<div class="card" style="text-align:center;"><p style="margin:0; font-size:14px; color:var(--color-text-muted);">Aucune donnée pour l'instant — termine une première session pour voir apparaître ta progression ici.</p></div>`
         : `
           <div class="progress-stats-row">
             ${
@@ -785,7 +785,7 @@ function renderProgress(): string {
 
           ${
             weakest
-              ? `<div class="card" style="margin-top:16px; border-color:var(--color-primary);">
+              ? `<div class="card" style="margin-top:16px; border-color:var(--color-primary); text-align:center;">
                   <p style="margin:0; font-size:13.5px; color:var(--color-text-muted);">
                     🎯 Concentre-toi sur <strong style="color:var(--color-text);">${escapeHtml(weakest.category_label)}</strong> pour ta prochaine session — c'est ta famille la moins consolidée pour l'instant (${Math.round(weakest.avg_score)}%).
                   </p>
@@ -793,12 +793,12 @@ function renderProgress(): string {
               : ''
           }
 
-          <div class="card" style="margin-top:16px; display:flex; flex-direction:column; gap:18px;">
+          <div class="card" style="margin-top:16px; display:flex; flex-direction:column; align-items:center; gap:18px;">
             ${categories
               .map((c) => {
                 const pct = Math.round(c.avg_score);
                 return `
-                  <div class="breakdown-row">
+                  <div class="breakdown-row" style="max-width:520px; width:100%;">
                     <div class="labels">
                       <span>${escapeHtml(c.category_label)}</span>
                       <span>${pct}% · ${c.attempts} question${c.attempts > 1 ? 's' : ''}</span>
@@ -814,8 +814,7 @@ function renderProgress(): string {
         `
     }
 
-    <div class="actions-row" style="margin-top:24px;">
-      <span></span>
+    <div class="actions-row" style="margin-top:24px; justify-content:center;">
       <button class="btn-primary" id="goto-setup-btn">Commencer une session</button>
     </div>
   `;
