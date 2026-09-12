@@ -469,7 +469,7 @@ textarea:focus-visible {
    largeur de fenêtre ou niveau de zoom. */
 .page-split {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
   min-height: 100vh;
 }
 
@@ -502,7 +502,7 @@ textarea:focus-visible {
 .glossary-panel {
   background: var(--color-primary);
   border-radius: 0;
-  padding: 48px 56px;
+  padding: 48px 40px;
   display: flex;
   flex-direction: column;
   gap: 20px;
