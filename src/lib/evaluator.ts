@@ -1,6 +1,6 @@
 import type { Bindings, Evaluation, Question } from '../types';
 
-const MODEL = '@cf/meta/llama-3.1-8b-instruct';
+const MODEL = '@cf/meta/llama-3.3-70b-instruct-fp8-fast';
 
 /**
  * LLM-as-judge : évalue une réponse par rapport à une rubrique explicite,

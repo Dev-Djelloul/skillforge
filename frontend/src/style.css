@@ -169,12 +169,13 @@ button:focus-visible {
 
 .progress-bar {
   height: 8px;
-  background: var(--color-border);
+  background: color-mix(in srgb, var(--color-border) 55%, transparent);
   border-radius: 999px;
   overflow: hidden;
 }
 .progress-bar > div {
   height: 100%;
+  min-width: 2%;
   background: linear-gradient(90deg, var(--color-primary), var(--color-accent));
   border-radius: 999px;
   transition: width 0.3s ease;

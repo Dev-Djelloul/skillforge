@@ -1,6 +1,6 @@
 import type { Bindings } from '../types';
 
-const MODEL = '@cf/meta/llama-3.1-8b-instruct';
+const MODEL = '@cf/meta/llama-3.3-70b-instruct-fp8-fast';
 
 export interface CategoryBreakdown {
   category: string;
