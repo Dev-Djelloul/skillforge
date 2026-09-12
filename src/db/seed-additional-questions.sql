@@ -110,7 +110,7 @@ INSERT INTO questions (category_id, difficulty, prompt, rubric, hint, resources)
 INSERT INTO questions (category_id, difficulty, prompt, rubric, hint, resources) VALUES
   ((SELECT id FROM categories WHERE slug='culture-num'), 1,
    'Qu''est-ce qu''un MVP (Minimum Viable Product) et à quoi sert-il ?',
-   '["version minimale d''un produit qui permet de tester une hypothèse avec de vrais utilisateurs", "objectif : apprendre vite avec un investissement limité, pas livrer un produit incomplet au rabais", "cite le lien avec le principe "build-measure-learn""]',
+   '["version minimale d''un produit qui permet de tester une hypothèse avec de vrais utilisateurs", "objectif : apprendre vite avec un investissement limité, pas livrer un produit incomplet au rabais", "cite le lien avec le principe \"build-measure-learn\""]',
    'Ce n''est pas "un produit pas fini" — c''est un outil pour apprendre le plus vite possible avec le moins d''efforts.',
    '[{"type":"article","title":"Minimum viable product — Wikipédia","url":"https://fr.wikipedia.org/wiki/Produit_minimum_viable"},{"type":"video","title":"Vidéos sur le MVP","url":"https://www.youtube.com/results?search_query=MVP+minimum+viable+product+expliqu%C3%A9"}]'),
   ((SELECT id FROM categories WHERE slug='culture-num'), 1,
