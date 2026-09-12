@@ -44,6 +44,10 @@ body {
   color: var(--color-text);
   font-family: var(--font-body);
   min-height: 100vh;
+  /* Échelle générale de l'interface : équivalent à un zoom navigateur à
+     125% appliqué par défaut, plutôt que de reconvertir toutes les
+     valeurs px du fichier en unités relatives (rem) pour un même effet. */
+  zoom: 1.25;
 }
 
 #app {
