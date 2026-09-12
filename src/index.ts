@@ -126,7 +126,7 @@ app.post('/api/sessions/:id/answer', async (c) => {
     return c.json({ error: 'Question introuvable' }, 404);
   }
 
-  const evaluation = await evaluateAnswer(c.env.AI, question, body.answer);
+  const evaluation = await evaluateAnswer(c.env, question, body.answer);
 
   await c.env.DB.prepare(
     `UPDATE session_items
@@ -183,7 +183,7 @@ app.post('/api/sessions/:id/followup', async (c) => {
     return c.json({ error: 'Question introuvable' }, 404);
   }
 
-  const feedback = await evaluateFollowUp(c.env.AI, question.prompt, body.follow_up_question, body.answer);
+  const feedback = await evaluateFollowUp(c.env, question.prompt, body.follow_up_question, body.answer);
 
   await c.env.DB.prepare(
     `UPDATE session_items
@@ -215,7 +215,7 @@ app.post('/api/sessions/:id/complete', async (c) => {
     return c.json({ error: 'Aucune réponse évaluée pour cette session' }, 400);
   }
 
-  const plan = await generateRevisionPlan(c.env.AI, breakdown.results);
+  const plan = await generateRevisionPlan(c.env, breakdown.results);
 
   await c.env.DB.prepare(
     `UPDATE sessions SET status = 'completed', finished_at = datetime('now') WHERE id = ?`

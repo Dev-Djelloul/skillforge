@@ -1,14 +1,12 @@
 import type { Bindings, Evaluation, Question } from '../types';
-import { extractResponseText } from './ai-response';
-
-const MODEL = '@cf/meta/llama-3.3-70b-instruct-fp8-fast';
+import { callOpenRouter } from './openrouter';
 
 /**
  * LLM-as-judge : évalue une réponse par rapport à une rubrique explicite,
  * plutôt qu'un jugement global non structuré (biais connu des juges LLM).
  */
 export async function evaluateAnswer(
-  ai: Bindings['AI'],
+  env: Bindings,
   question: Question,
   userAnswer: string
 ): Promise<Evaluation> {
@@ -39,18 +37,16 @@ ${userAnswer}
 
 Évalue cette réponse selon la grille ci-dessus.`;
 
-  const result = await ai.run(MODEL, {
-    messages: [
+  const raw = await callOpenRouter(
+    env.OPENROUTER_API_KEY,
+    [
       { role: 'system', content: systemPrompt },
       { role: 'user', content: userPrompt },
     ],
-    // La réponse JSON (réponse complète + conseils + listes) dépasse la
-    // limite par défaut du modèle et se retrouvait tronquée, cassant le
-    // parsing JSON.
-    max_tokens: 1024,
-  });
+    1024
+  );
 
-  return parseEvaluation(extractResponseText(result));
+  return parseEvaluation(raw);
 }
 
 /**
@@ -59,7 +55,7 @@ ${userAnswer}
  * la question — le score reste celui de la réponse initiale).
  */
 export async function evaluateFollowUp(
-  ai: Bindings['AI'],
+  env: Bindings,
   originalQuestion: string,
   followUpQuestion: string,
   followUpAnswer: string
@@ -77,12 +73,7 @@ ${followUpAnswer}
 
 Donne un feedback court (2-3 phrases, en français, ton direct et constructif) sur cette réponse à la relance — sans note chiffrée, juste un avis qualitatif.`;
 
-  const result = await ai.run(MODEL, {
-    messages: [{ role: 'user', content: prompt }],
-    max_tokens: 512,
-  });
-
-  const text = extractResponseText(result);
+  const text = await callOpenRouter(env.OPENROUTER_API_KEY, [{ role: 'user', content: prompt }], 512);
   return text || 'Feedback indisponible pour le moment.';
 }
 

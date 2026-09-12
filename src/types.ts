@@ -3,6 +3,7 @@ export type Bindings = {
   AI: Ai;
   QUESTIONS_INDEX: VectorizeIndex;
   REINDEX_SECRET: string;
+  OPENROUTER_API_KEY: string;
 };
 
 export interface Question {

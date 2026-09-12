@@ -1,7 +1,5 @@
 import type { Bindings } from '../types';
-import { extractResponseText } from './ai-response';
-
-const MODEL = '@cf/meta/llama-3.3-70b-instruct-fp8-fast';
+import { callOpenRouter } from './openrouter';
 
 export interface CategoryBreakdown {
   category: string;
@@ -15,7 +13,7 @@ export interface CategoryBreakdown {
  * terme entre sessions) — la V2 croisera l'historique complet via D1.
  */
 export async function generateRevisionPlan(
-  ai: Bindings['AI'],
+  env: Bindings,
   breakdown: CategoryBreakdown[]
 ): Promise<string> {
   const summary = breakdown
@@ -30,11 +28,6 @@ Rédige un plan de révision court (5 à 8 lignes, en français, ton direct et m
 2. Propose une action concrète par domaine prioritaire (ressource, exercice, type de révision)
 3. Termine sur un point fort à conserver`;
 
-  const result = await ai.run(MODEL, {
-    messages: [{ role: 'user', content: prompt }],
-    max_tokens: 512,
-  });
-
-  const text = extractResponseText(result);
+  const text = await callOpenRouter(env.OPENROUTER_API_KEY, [{ role: 'user', content: prompt }], 512);
   return text || 'Plan de révision indisponible pour le moment.';
 }
