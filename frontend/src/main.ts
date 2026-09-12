@@ -10,7 +10,9 @@ import {
   deleteSession,
   getProgressTimeline,
   getGlossary,
+  getResumableSession,
   type GlossaryTerm,
+  type ResumableSession,
   type StartSessionResponse,
   type AnswerResponse,
   type CompleteSessionResponse,
@@ -144,6 +146,7 @@ interface AppState {
   glossaryTerms: GlossaryTerm[] | null;
   glossaryLoading: boolean;
   glossaryQuestionId: number | null;
+  resumableSession: ResumableSession | null;
 }
 
 const state: AppState = {
@@ -174,6 +177,7 @@ const state: AppState = {
   glossaryTerms: null,
   glossaryLoading: false,
   glossaryQuestionId: null,
+  resumableSession: null,
 };
 
 let timerHandle: ReturnType<typeof setInterval> | null = null;
@@ -338,9 +342,27 @@ function renderFamilyCard(family: FamilyInfo): string {
   `;
 }
 
+function renderResumableBanner(): string {
+  const resumable = state.resumableSession;
+  if (!resumable) return '';
+
+  return `
+    <div class="card resumable-banner">
+      <p>
+        ⏱️ Tu as une session interrompue en cours — ${resumable.answered_count}/${resumable.questions.length} questions déjà répondues.
+      </p>
+      <div class="modal-actions">
+        <button class="btn-secondary" id="dismiss-resumable-btn">Abandonner</button>
+        <button class="btn-primary" id="resume-session-btn">Reprendre ma session</button>
+      </div>
+    </div>
+  `;
+}
+
 function renderStart(): string {
   return `
     ${topBar()}
+    ${renderResumableBanner()}
     <div class="hero hero-center">
       <h1>Préparez votre prochain entretien technique</h1>
       <p>SkillForge simule un entretien réaliste en IA/ML, gestion de projet digital et développement web, avec un feedback immédiat pour progresser à chaque session.</p>
@@ -945,6 +967,8 @@ function renderConfirmDeleteModal(): string {
 
 function attachHandlers(): void {
   document.getElementById('goto-setup-btn')?.addEventListener('click', onGoToSetup);
+  document.getElementById('resume-session-btn')?.addEventListener('click', onResumeSession);
+  document.getElementById('dismiss-resumable-btn')?.addEventListener('click', onDismissResumable);
   document.getElementById('back-to-start-btn')?.addEventListener('click', onRestart);
   document.getElementById('confirm-setup-btn')?.addEventListener('click', onConfirmSetup);
   document.getElementById('hint-btn')?.addEventListener('click', onHint);
@@ -1011,6 +1035,62 @@ function onGoToSetup(): void {
   state.screen = 'setup';
   state.errorMessage = null;
   render();
+}
+
+async function onDismissResumable(): Promise<void> {
+  const resumable = state.resumableSession;
+  if (!resumable) return;
+
+  state.resumableSession = null;
+  render();
+  try {
+    // Supprime réellement la session côté serveur (pas juste un masquage
+    // local) : sinon le bandeau réapparaîtrait au prochain chargement de
+    // la page, puisque cette session resterait "in_progress" en base.
+    await deleteSession(resumable.session_id);
+  } catch {
+    // Échec silencieux : la session restera proposée au rechargement
+    // suivant, ce qui n'est pas bloquant pour l'utilisateur.
+  }
+}
+
+async function onResumeSession(): Promise<void> {
+  const resumable = state.resumableSession;
+  if (!resumable) return;
+
+  state.session = { session_id: resumable.session_id, questions: resumable.questions };
+  state.resumableSession = null;
+  state.hint = null;
+  state.lastAnswer = null;
+  state.errorMessage = null;
+
+  // Les questions sont répondues dans l'ordre : les answered_count premières
+  // sont déjà traitées, la suivante est le point de reprise. Si tout est
+  // déjà répondu (session interrompue juste avant de voir les résultats),
+  // on complète directement au lieu de rouvrir une question déjà traitée.
+  if (resumable.answered_count >= resumable.questions.length) {
+    state.busy = true;
+    render();
+    try {
+      state.results = await completeSession(resumable.session_id);
+      state.screen = 'results';
+    } catch (err) {
+      state.errorMessage = err instanceof Error ? err.message : 'Impossible de clôturer la session.';
+      state.screen = 'error';
+    } finally {
+      state.busy = false;
+      render();
+    }
+    return;
+  }
+
+  state.currentIndex = resumable.answered_count;
+  state.screen = 'question';
+  const q = resumable.questions[state.currentIndex];
+  state.timeRemaining = TIME_BY_DIFFICULTY[q.difficulty] ?? 300;
+  render();
+  startQuestionTimer(q.difficulty);
+  loadGlossaryForCurrentQuestion();
 }
 
 async function onConfirmSetup(): Promise<void> {
@@ -1296,6 +1376,22 @@ function escapeAttr(value: string): string {
   return value.replace(/"/g, '&quot;');
 }
 
+async function checkResumableSession(): Promise<void> {
+  try {
+    const { session } = await getResumableSession();
+    if (session && state.screen === 'start') {
+      state.resumableSession = session;
+      render();
+    }
+  } catch {
+    // Repli silencieux : l'absence de bandeau "reprendre" ne doit jamais
+    // bloquer l'utilisation normale de l'application.
+  }
+}
+
 loadSharedSessionFromUrl().then((wasShared) => {
-  if (!wasShared) render();
+  if (!wasShared) {
+    render();
+    checkResumableSession();
+  }
 });

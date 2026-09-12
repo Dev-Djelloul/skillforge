@@ -127,6 +127,64 @@ app.post('/api/sessions', async (c) => {
   });
 });
 
+// Session interrompue la plus récente d'un candidat (fermeture d'onglet,
+// rafraîchissement) — permet de proposer de reprendre plutôt que de forcer
+// systématiquement une nouvelle session. Limité aux 24 dernières heures :
+// au-delà, le contexte de la session est considéré périmé pour le candidat.
+// Placé avant GET /api/sessions/:id pour que "resumable" ne soit pas
+// capturé comme un identifiant de session par cette route plus générique.
+app.get('/api/sessions/resumable/:client_id', async (c) => {
+  const clientId = c.req.param('client_id');
+
+  const session = await c.env.DB.prepare(
+    `SELECT id FROM sessions
+     WHERE user_id = ? AND status = 'in_progress' AND started_at >= datetime('now', '-1 day')
+     ORDER BY started_at DESC
+     LIMIT 1`
+  )
+    .bind(clientId)
+    .first<{ id: string }>();
+
+  if (!session) {
+    return c.json({ session: null });
+  }
+
+  const items = await c.env.DB.prepare(
+    `SELECT si.position, si.question_id, si.score, q.prompt, q.difficulty, cat.slug AS category_slug
+     FROM session_items si
+     JOIN questions q ON q.id = si.question_id
+     JOIN categories cat ON cat.id = q.category_id
+     WHERE si.session_id = ?
+     ORDER BY si.position`
+  )
+    .bind(session.id)
+    .all<{
+      position: number;
+      question_id: number;
+      score: number | null;
+      prompt: string;
+      difficulty: number;
+      category_slug: string;
+    }>();
+
+  const answeredCount = items.results.filter((i) => i.score !== null).length;
+
+  return c.json({
+    session: {
+      session_id: session.id,
+      questions: items.results.map((i) => ({
+        position: i.position,
+        question_id: i.question_id,
+        prompt: i.prompt,
+        difficulty: i.difficulty,
+        category_slug: i.category_slug,
+        is_new: false,
+      })),
+      answered_count: answeredCount,
+    },
+  });
+});
+
 // Révèle l'indice d'une question, à la demande (jamais renvoyé avec la liste
 // de questions de la session pour ne pas biaiser la réponse spontanée).
 app.get('/api/questions/:id/hint', async (c) => {

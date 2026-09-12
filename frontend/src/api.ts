@@ -210,6 +210,16 @@ export interface SessionDetailResponse {
   items: SessionDetailItem[];
 }
 
+export interface ResumableSession {
+  session_id: string;
+  questions: SessionQuestion[];
+  answered_count: number;
+}
+
+export function getResumableSession(): Promise<{ session: ResumableSession | null }> {
+  return request(`/api/sessions/resumable/${getClientId()}`);
+}
+
 export function getSessionDetail(sessionId: string): Promise<SessionDetailResponse> {
   return request(`/api/sessions/${sessionId}`);
 }

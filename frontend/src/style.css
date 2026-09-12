@@ -615,6 +615,22 @@ textarea:focus-visible {
   line-height: 1.5;
 }
 
+.resumable-banner {
+  border-color: var(--color-accent);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.resumable-banner p {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--color-text);
+}
+.resumable-banner .modal-actions {
+  margin-top: 4px;
+}
+
 .actions-row {
   display: flex;
   justify-content: space-between;
