@@ -118,36 +118,38 @@ function renderQuestion(): string {
   const progress = Math.round((state.currentIndex / session.questions.length) * 100);
 
   return `
-    ${topBar()}
+    <div class="page-split">
+      <div class="page-split-main">
+        ${topBar()}
 
-    <div class="question-layout">
-      <div class="question-block">
-        <div class="session-header">
-          <span>Question ${state.currentIndex + 1} / ${session.questions.length}</span>
-          <span class="muted">${progress}%</span>
-        </div>
-        <div class="progress-bar"><div style="width:${progress}%"></div></div>
+        <div class="question-block">
+          <div class="session-header">
+            <span>Question ${state.currentIndex + 1} / ${session.questions.length}</span>
+            <span class="muted">${progress}%</span>
+          </div>
+          <div class="progress-bar"><div style="width:${progress}%"></div></div>
 
-        <div class="question-meta">${difficultyBadge(q.difficulty)}</div>
-        <h2>${escapeHtml(q.prompt)}</h2>
+          <div class="question-meta">${difficultyBadge(q.difficulty)}</div>
+          <h2>${escapeHtml(q.prompt)}</h2>
 
-        ${
-          state.hint
-            ? `<div class="hint-box">💡 ${escapeHtml(state.hint)}</div>`
-            : `<button class="hint-toggle" id="hint-btn" ${state.hintLoading ? 'disabled' : ''}>
-                ${state.hintLoading ? 'Chargement de l’indice…' : 'Afficher un indice'}
-              </button>`
-        }
+          ${
+            state.hint
+              ? `<div class="hint-box">💡 ${escapeHtml(state.hint)}</div>`
+              : `<button class="hint-toggle" id="hint-btn" ${state.hintLoading ? 'disabled' : ''}>
+                  ${state.hintLoading ? 'Chargement de l’indice…' : 'Afficher un indice'}
+                </button>`
+          }
 
-        <textarea id="answer-input" placeholder="Rédigez votre réponse ici — vous pouvez utiliser la méthode STAR pour structurer votre réponse..."></textarea>
+          <textarea id="answer-input" placeholder="Rédigez votre réponse ici — vous pouvez utiliser la méthode STAR pour structurer votre réponse..."></textarea>
 
-        ${state.errorMessage ? `<div class="error-box">${escapeHtml(state.errorMessage)}</div>` : ''}
+          ${state.errorMessage ? `<div class="error-box">${escapeHtml(state.errorMessage)}</div>` : ''}
 
-        <div class="actions-row">
-          <span></span>
-          <button class="btn-primary" id="submit-btn" ${state.busy ? 'disabled' : ''}>
-            ${state.busy ? 'Évaluation en cours…' : 'Valider la réponse'}
-          </button>
+          <div class="actions-row">
+            <span></span>
+            <button class="btn-primary" id="submit-btn" ${state.busy ? 'disabled' : ''}>
+              ${state.busy ? 'Évaluation en cours…' : 'Valider la réponse'}
+            </button>
+          </div>
         </div>
       </div>
 
