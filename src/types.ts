@@ -40,6 +40,7 @@ export interface SessionItem {
   follow_up_question: string | null;
   follow_up_answer: string | null;
   follow_up_feedback: string | null;
+  criteria: string | null; // JSON stringifié : EvaluationCriterion[]
 }
 
 export interface EvaluationCriterion {

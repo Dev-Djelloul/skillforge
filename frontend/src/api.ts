@@ -223,11 +223,13 @@ export interface SessionDetailItem {
   difficulty: number;
   hint: string | null;
   resources: Resource[];
+  criteria: EvaluationCriterion[];
 }
 
 export interface SessionDetailResponse {
   session: { id: string; status: string; started_at: string; finished_at: string | null };
   items: SessionDetailItem[];
+  revision_plan: RevisionPlan | null;
 }
 
 export interface ResumableSession {

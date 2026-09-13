@@ -555,11 +555,12 @@ function faviconUrl(pageUrl: string): string {
 }
 
 function renderResourceCard(r: Resource): string {
-  // Le lien W3Schools passe par une recherche Google restreinte au site
-  // (jamais de chemin interne deviné) — le logo affiché doit donc être
-  // celui de w3schools.com explicitement, pas celui du domaine du lien
-  // (google.com), sans quoi on afficherait le logo Google par erreur.
-  const iconDomain = r.type === 'w3schools' ? 'https://www.w3schools.com' : r.url;
+  // Les liens "article" (Wikipédia) et "w3schools" passent tous deux par
+  // une recherche Google restreinte au site (jamais de chemin interne
+  // deviné) — le logo affiché doit donc être celui du vrai site cible,
+  // pas celui du domaine du lien technique (google.com).
+  const iconDomain =
+    r.type === 'w3schools' ? 'https://www.w3schools.com' : r.type === 'article' ? 'https://fr.wikipedia.org' : r.url;
   const preview =
     r.type === 'video'
       ? `<div class="resource-icon resource-icon-video">${VIDEO_ICON_SVG}</div>`
@@ -975,6 +976,11 @@ function renderSessionDetail(): string {
   const detail = state.sessionDetail;
   if (!detail) return `${topBar(!state.sharedView)}<div class="loading">Chargement…</div>`;
 
+  const scored = detail.items.filter((item) => item.score !== null);
+  const overall = scored.length
+    ? Math.round(scored.reduce((sum, item) => sum + (item.score as number), 0) / scored.length)
+    : null;
+
   return `
     ${topBar(!state.sharedView)}
     <div class="hero" style="padding-top:24px; padding-bottom:16px;">
@@ -986,18 +992,28 @@ function renderSessionDetail(): string {
       <h1 style="font-size:24px; margin-top:8px;">Session du ${formatDate(detail.session.started_at)}</h1>
     </div>
 
+    ${
+      overall !== null
+        ? `<div class="card results-summary" style="margin-bottom:16px;">
+            <span style="font-size:12px; color:var(--color-text-subtle); text-transform:uppercase; letter-spacing:0.05em; font-weight:600;">Score final</span>
+            <div><span class="value">${overall}</span><span style="font-size:16px; color:var(--color-text-muted);"> / 100</span></div>
+          </div>`
+        : ''
+    }
+
     <div style="display:flex; flex-direction:column; gap:14px;">
       ${detail.items
         .map(
           (item, i) => `
-            <div class="card" style="display:flex; flex-direction:column; gap:10px;">
+            <div class="card" style="display:flex; flex-direction:column; gap:12px;">
               <div class="question-meta">${difficultyBadge(item.difficulty)}</div>
               <div style="font-size:14px; font-weight:600;">Q${i + 1}. ${escapeHtml(item.prompt)}</div>
               ${item.user_answer ? `<p style="margin:0; font-size:13px; color:var(--color-text-muted); white-space:pre-line;">${escapeHtml(item.user_answer)}</p>` : `<p style="margin:0; font-size:13px; color:var(--color-text-subtle); font-style:italic;">Non répondue</p>`}
               ${
                 item.score !== null
                   ? `<div class="score-line"><span class="value" style="font-size:24px;">${item.score}</span><span class="denom">/ 100</span></div>
-                     ${item.feedback ? `<p style="margin:0; font-size:12px; color:var(--color-text-muted);">${escapeHtml(item.feedback)}</p>` : ''}`
+                     ${item.feedback ? `<p class="feedback-answer-text" style="margin:0;">${escapeHtml(item.feedback)}</p>` : ''}
+                     ${renderCriteriaChecklist(item.criteria)}`
                   : ''
               }
             </div>
@@ -1005,6 +1021,20 @@ function renderSessionDetail(): string {
         )
         .join('')}
     </div>
+
+    ${
+      detail.revision_plan
+        ? `<div style="margin-top:20px; display:flex; flex-direction:column; gap:14px;">
+            <strong style="font-size:16px;">Plan de révision personnalisé</strong>
+            ${detail.revision_plan.items.map(renderRevisionPlanItem).join('')}
+            ${
+              detail.revision_plan.closing_note
+                ? `<div class="revision-closing">🌟 ${escapeHtml(detail.revision_plan.closing_note)}</div>`
+                : ''
+            }
+          </div>`
+        : ''
+    }
   `;
 }
 

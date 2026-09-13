@@ -247,10 +247,10 @@ app.post('/api/sessions/:id/answer', async (c) => {
 
   await c.env.DB.prepare(
     `UPDATE session_items
-     SET user_answer = ?, score = ?, feedback = ?, answered_at = datetime('now')
+     SET user_answer = ?, score = ?, feedback = ?, criteria = ?, answered_at = datetime('now')
      WHERE session_id = ? AND question_id = ?`
   )
-    .bind(body.answer, evaluation.score, evaluation.feedback, sessionId, body.question_id)
+    .bind(body.answer, evaluation.score, evaluation.feedback, JSON.stringify(evaluation.criteria), sessionId, body.question_id)
     .run();
 
   // Le score par catégorie (skill_scores) n'est plus maintenu en écriture ici :
@@ -312,10 +312,13 @@ app.post('/api/sessions/:id/complete', async (c) => {
 
   const plan = await generateRevisionPlan(c.env, breakdown.results);
 
+  // Le plan est persisté pour rester consultable depuis l'historique, autant
+  // de fois que voulu, plutôt que d'exister uniquement le temps de l'écran
+  // de résultats affiché juste après la clôture de la session.
   await c.env.DB.prepare(
-    `UPDATE sessions SET status = 'completed', finished_at = datetime('now') WHERE id = ?`
+    `UPDATE sessions SET status = 'completed', finished_at = datetime('now'), revision_plan = ? WHERE id = ?`
   )
-    .bind(sessionId)
+    .bind(JSON.stringify(plan), sessionId)
     .run();
 
   return c.json({ breakdown: breakdown.results, revision_plan: plan });
@@ -327,7 +330,7 @@ app.get('/api/sessions/:id', async (c) => {
 
   const session = await c.env.DB.prepare(`SELECT * FROM sessions WHERE id = ?`)
     .bind(sessionId)
-    .first();
+    .first<{ revision_plan: string | null; [key: string]: unknown }>();
 
   if (!session) {
     return c.json({ error: 'Session introuvable' }, 404);
@@ -341,14 +344,23 @@ app.get('/api/sessions/:id', async (c) => {
      ORDER BY si.position`
   )
     .bind(sessionId)
-    .all<SessionItem & { prompt: string; difficulty: number; hint: string | null; resources: string | null }>();
+    .all<
+      SessionItem & { prompt: string; difficulty: number; hint: string | null; resources: string | null }
+    >();
 
-  const itemsWithParsedResources = items.results.map((item) => ({
+  const itemsWithParsed = items.results.map((item) => ({
     ...item,
     resources: item.resources ? (JSON.parse(item.resources) as Resource[]) : [],
+    criteria: item.criteria ? JSON.parse(item.criteria) : [],
   }));
 
-  return c.json({ session, items: itemsWithParsedResources });
+  const { revision_plan: revisionPlanJson, ...sessionFields } = session;
+
+  return c.json({
+    session: sessionFields,
+    items: itemsWithParsed,
+    revision_plan: revisionPlanJson ? JSON.parse(revisionPlanJson) : null,
+  });
 });
 
 // Supprime une session de l'historique d'un candidat. Le client_id est

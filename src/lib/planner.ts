@@ -123,9 +123,11 @@ function parseRevisionPlan(raw: string, sorted: CategoryBreakdown[]): RevisionPl
   }
 }
 
-// Lien de recherche plutôt qu'une page précise inventée — même principe que
-// pour les ressources des questions : jamais d'URL dont on ne peut garantir
-// l'existence.
+// Recherche Google restreinte à Wikipédia plutôt que le moteur de recherche
+// interne de Wikipédia : sur des sujets formulés librement par l'IA (ex:
+// "Évaluation des modèles"), la recherche interne de Wikipédia atterrit
+// souvent sur un résultat hors-sujet ou une page de désambiguïsation —
+// Google restreint au domaine trouve fiablement l'article le plus pertinent.
 function buildSearchUrl(topic: string): string {
-  return `https://fr.wikipedia.org/w/index.php?search=${encodeURIComponent(topic)}`;
+  return `https://www.google.com/search?q=${encodeURIComponent(`site:fr.wikipedia.org ${topic}`)}`;
 }

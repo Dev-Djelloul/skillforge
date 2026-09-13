@@ -41,7 +41,11 @@ function buildSearchResources(topic: string, categoryLabel: string): Resource[] 
       {
         type: 'article' as const,
         title: `Rechercher : ${theme}`,
-        url: `https://fr.wikipedia.org/w/index.php?search=${query}`,
+        // Recherche Google restreinte à Wikipédia plutôt que son moteur de
+        // recherche interne : plus fiable sur des thèmes formulés librement
+        // par l'IA, qui n'atterrissent pas toujours sur le bon article via
+        // la recherche native de Wikipédia.
+        url: `https://www.google.com/search?q=${encodeURIComponent(`site:fr.wikipedia.org ${theme}`)}`,
       },
       {
         type: 'video' as const,
