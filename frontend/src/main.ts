@@ -579,6 +579,12 @@ function renderResourceCard(r: Resource): string {
   `;
 }
 
+function criteriaOutcomeSentence(coveredCount: number, total: number): string {
+  if (coveredCount === 0) return "Aucun critère n'a été couvert.";
+  if (coveredCount === total) return 'Tu as couvert tous les critères.';
+  return `Tu n'as couvert que ${coveredCount} critère${coveredCount > 1 ? 's' : ''} sur ${total}.`;
+}
+
 function renderCriteriaChecklist(criteria: EvaluationCriterion[]): string {
   if (criteria.length === 0) return '';
 
@@ -586,7 +592,7 @@ function renderCriteriaChecklist(criteria: EvaluationCriterion[]): string {
 
   return `
     <div class="feedback-section">
-      <span class="feedback-section-title">Sur quoi porte la note — ${coveredCount}/${criteria.length} critères couverts</span>
+      <span class="feedback-section-title">Sur quoi porte ta note ? ${criteriaOutcomeSentence(coveredCount, criteria.length)}</span>
       <ul class="criteria-list">
         ${criteria
           .map(
