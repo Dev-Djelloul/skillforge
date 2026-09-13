@@ -1391,6 +1391,16 @@ async function checkResumableSession(): Promise<void> {
   }
 }
 
+// Enregistrement du service worker : condition technique requise par les
+// navigateurs pour proposer l'installation de l'app (PWA). Échec silencieux
+// si non supporté (ex: certains navigateurs en navigation privée) — jamais
+// bloquant pour l'utilisation normale du site.
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  });
+}
+
 loadSharedSessionFromUrl().then((wasShared) => {
   if (!wasShared) {
     render();
