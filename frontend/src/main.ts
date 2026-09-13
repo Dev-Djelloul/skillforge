@@ -589,12 +589,12 @@ function renderFeedback(): string {
 
       ${
         evaluation.points_couverts.length
-          ? `<div class="feedback-section"><span class="feedback-section-title feedback-section-title-primary">Les points clés à retenir</span><ul>${evaluation.points_couverts.map((p) => `<li>${escapeHtml(p)}</li>`).join('')}</ul></div>`
+          ? `<div class="feedback-section feedback-section-primary"><span class="feedback-section-title feedback-section-title-primary">Les points clés à retenir</span><ul>${evaluation.points_couverts.map((p) => `<li>${escapeHtml(p)}</li>`).join('')}</ul></div>`
           : ''
       }
       ${
         evaluation.points_manquants.length
-          ? `<div class="feedback-section"><span class="feedback-section-title feedback-section-title-accent2">Nuances supplémentaires</span><ul>${evaluation.points_manquants.map((p) => `<li>${escapeHtml(p)}</li>`).join('')}</ul></div>`
+          ? `<div class="feedback-section feedback-section-accent2"><span class="feedback-section-title feedback-section-title-accent2">Nuances supplémentaires</span><ul>${evaluation.points_manquants.map((p) => `<li>${escapeHtml(p)}</li>`).join('')}</ul></div>`
           : ''
       }
 

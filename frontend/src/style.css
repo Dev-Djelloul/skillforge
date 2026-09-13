@@ -687,6 +687,8 @@ textarea:focus-visible {
 }
 .feedback-section-title-primary { color: var(--color-primary); }
 .feedback-section-title-accent2 { color: var(--color-level-1); }
+.feedback-section-primary ul { color: var(--color-primary); }
+.feedback-section-accent2 ul { color: var(--color-level-1); }
 .feedback-section ul {
   margin: 0;
   padding-left: 20px;
