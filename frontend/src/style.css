@@ -630,7 +630,7 @@ textarea:focus-visible {
 .revision-priority {
   font-size: 11px;
   font-weight: 700;
-  color: #fff;
+  color: var(--color-accent);
   padding: 4px 10px;
   border-radius: 999px;
   text-transform: uppercase;
