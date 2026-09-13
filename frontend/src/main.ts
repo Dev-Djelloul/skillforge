@@ -137,7 +137,6 @@ interface AppState {
   setupFull: boolean;
   setupContext: string;
   timeRemaining: number;
-  followUpAnswered: boolean;
   followUpFeedback: string | null;
   followUpBusy: boolean;
   shareMessage: string | null;
@@ -168,7 +167,6 @@ const state: AppState = {
   setupFull: false,
   setupContext: '',
   timeRemaining: 0,
-  followUpAnswered: false,
   followUpFeedback: null,
   followUpBusy: false,
   shareMessage: null,
@@ -867,7 +865,7 @@ function renderHistory(): string {
                         <div style="font-size:13px; font-weight:600; color:var(--color-text);">${formatDate(s.started_at)}</div>
                         <div style="font-size:12px; color:var(--color-text-subtle); margin-top:2px;">${statusLabel} · ${s.answered_count} réponse${s.answered_count > 1 ? 's' : ''}</div>
                       </div>
-                      <div class="disp" style="font-size:20px; font-weight:700; color:var(--color-accent);">${scoreLabel}</div>
+                      <div style="font-size:20px; font-weight:700; color:var(--color-accent);">${scoreLabel}</div>
                     </button>
                     <button class="session-delete-btn" data-session-id="${escapeAttr(s.id)}" title="Supprimer cette session">🗑</button>
                   </div>
@@ -1181,7 +1179,6 @@ async function onSubmit(): Promise<void> {
   try {
     state.lastAnswer = await submitAnswer(session.session_id, q.question_id, answerText);
     state.screen = 'feedback';
-    state.followUpAnswered = false;
     state.followUpFeedback = null;
   } catch (err) {
     state.errorMessage = err instanceof Error ? err.message : 'Impossible d’évaluer la réponse.';
@@ -1205,7 +1202,6 @@ async function onSubmitFollowUp(): Promise<void> {
   try {
     const { feedback } = await submitFollowUp(session.session_id, q.question_id, followUpQuestion, answerText);
     state.followUpFeedback = feedback;
-    state.followUpAnswered = true;
   } catch (err) {
     state.errorMessage = err instanceof Error ? err.message : 'Impossible d’envoyer la relance.';
   } finally {
@@ -1222,7 +1218,6 @@ async function onNext(): Promise<void> {
     state.currentIndex += 1;
     state.hint = null;
     state.lastAnswer = null;
-    state.followUpAnswered = false;
     state.followUpFeedback = null;
     state.screen = 'question';
     const nextQuestion = session.questions[state.currentIndex];
@@ -1336,7 +1331,6 @@ function onRestart(): void {
   state.setupDifficulty = null;
   state.setupFull = false;
   state.setupContext = '';
-  state.followUpAnswered = false;
   state.followUpFeedback = null;
   state.shareMessage = null;
   state.sharedView = false;
@@ -1346,6 +1340,11 @@ function onRestart(): void {
   state.glossaryQuestionId = null;
   history.replaceState(null, '', window.location.pathname);
   render();
+  // Re-vérifie une éventuelle session interrompue à chaque retour à
+  // l'accueil (pas seulement au chargement initial de la page) : sinon
+  // une session abandonnée en cours de navigation ne serait détectée
+  // qu'après un rechargement complet du navigateur.
+  checkResumableSession();
 }
 
 async function loadSharedSessionFromUrl(): Promise<boolean> {
@@ -1379,7 +1378,10 @@ function escapeAttr(value: string): string {
 async function checkResumableSession(): Promise<void> {
   try {
     const { session } = await getResumableSession();
-    if (session && state.screen === 'start') {
+    if (state.screen === 'start') {
+      // Toujours réassigné (y compris à null) : sinon un ancien bandeau
+      // resterait affiché indéfiniment si le serveur ne renvoie plus de
+      // session à reprendre (expirée, déjà traitée ailleurs...).
       state.resumableSession = session;
       render();
     }
