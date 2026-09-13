@@ -500,7 +500,7 @@ function renderQuestion(): string {
           </div>
           <div class="progress-bar"><div style="width:${progress}%"></div></div>
 
-          <div class="question-meta">${difficultyBadge(q.difficulty)}${q.is_new ? `<span class="badge badge-new">✨ Nouvelle question</span>` : ''}</div>
+          <div class="question-meta">${difficultyBadge(q.difficulty)}${q.is_new ? `<span class="badge badge-new">✨ Nouvelle question IA</span>` : ''}</div>
           <h2>${escapeHtml(q.prompt)}</h2>
 
           ${
@@ -675,6 +675,33 @@ function renderRevisionPlanItem(item: RevisionPlanItem): string {
   `;
 }
 
+function renderResultsQuestionDetail(): string {
+  const items = state.sessionDetail?.items ?? [];
+  if (items.length === 0) return '';
+
+  return `
+    <div class="card" style="margin-top:20px; display:flex; flex-direction:column; gap:14px;">
+      <strong style="font-size:14px;">Détail par question</strong>
+      ${items
+        .filter((item) => item.score !== null)
+        .map((item, i) => {
+          const pct = item.score as number;
+          const color = scoreColor(pct);
+          return `
+            <div class="breakdown-row">
+              <div class="labels">
+                <span>Q${i + 1}. ${escapeHtml(item.prompt.length > 90 ? item.prompt.slice(0, 90) + '…' : item.prompt)}</span>
+                <span style="color:${color}; font-weight:700;">${pct}/100</span>
+              </div>
+              <div class="mini-bar"><div style="width:${pct}%; background:${color};"></div></div>
+            </div>
+          `;
+        })
+        .join('')}
+    </div>
+  `;
+}
+
 function renderResults(): string {
   const results = state.results!;
   const overall = Math.round(
@@ -686,6 +713,11 @@ function renderResults(): string {
     <div class="card results-summary">
       <span style="font-size:12px; color:var(--color-text-subtle); text-transform:uppercase; letter-spacing:0.05em; font-weight:600;">Score final</span>
       <div><span class="value">${overall}</span><span style="font-size:16px; color:var(--color-text-muted);"> / 100</span></div>
+    </div>
+
+    <div class="card scoring-explainer" style="margin-top:16px;">
+      <strong style="font-size:13px;">Comment la note est calculée</strong>
+      <p>Chaque réponse est notée par l'IA sur une grille de points attendus définie à l'avance pour la question (jamais un jugement global impressionniste). Le score final est la moyenne des notes obtenues sur les ${state.session?.questions.length ?? results.breakdown.length} questions de la session, et le score par catégorie ci-dessous est la moyenne des questions de cette famille uniquement.</p>
     </div>
 
     <div class="card" style="margin-top:20px; display:flex; flex-direction:column; gap:14px;">
@@ -703,6 +735,8 @@ function renderResults(): string {
         })
         .join('')}
     </div>
+
+    ${renderResultsQuestionDetail()}
 
     <div style="margin-top:20px; display:flex; flex-direction:column; gap:14px;">
       <strong style="font-size:16px;">Plan de révision personnalisé</strong>
@@ -1108,7 +1142,12 @@ async function onResumeSession(): Promise<void> {
     state.busy = true;
     render();
     try {
-      state.results = await completeSession(resumable.session_id);
+      const [results, detail] = await Promise.all([
+        completeSession(resumable.session_id),
+        getSessionDetail(resumable.session_id),
+      ]);
+      state.results = results;
+      state.sessionDetail = detail;
       state.screen = 'results';
     } catch (err) {
       state.errorMessage = err instanceof Error ? err.message : 'Impossible de clôturer la session.';
@@ -1269,7 +1308,12 @@ async function onNext(): Promise<void> {
   state.busy = true;
   render();
   try {
-    state.results = await completeSession(session.session_id);
+    const [results, detail] = await Promise.all([
+      completeSession(session.session_id),
+      getSessionDetail(session.session_id),
+    ]);
+    state.results = results;
+    state.sessionDetail = detail;
     state.screen = 'results';
   } catch (err) {
     state.errorMessage = err instanceof Error ? err.message : 'Impossible de clôturer la session.';

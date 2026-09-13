@@ -831,6 +831,18 @@ textarea:focus-visible {
 }
 .results-summary .value { font-family: var(--font-display); font-size: 56px; font-weight: 700; color: var(--color-accent); }
 
+.scoring-explainer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.scoring-explainer p {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--color-text-muted);
+}
+
 .progress-stats-row {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
