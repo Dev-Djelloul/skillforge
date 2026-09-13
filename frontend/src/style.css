@@ -651,7 +651,7 @@ textarea:focus-visible {
   margin: 0;
   font-size: 13.5px;
   line-height: 1.65;
-  color: var(--color-text-muted);
+  color: var(--color-accent);
 }
 .revision-resource {
   align-self: flex-start;
