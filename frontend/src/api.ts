@@ -42,10 +42,15 @@ export interface Resource {
   url: string;
 }
 
+export interface EvaluationCriterion {
+  text: string;
+  covered: boolean;
+}
+
 export interface Evaluation {
   score: number;
   feedback: string;
-  points_couverts: string[];
+  criteria: EvaluationCriterion[];
   points_manquants: string[];
   follow_up_question: string | null;
 }

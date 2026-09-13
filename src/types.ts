@@ -42,10 +42,15 @@ export interface SessionItem {
   follow_up_feedback: string | null;
 }
 
+export interface EvaluationCriterion {
+  text: string;
+  covered: boolean;
+}
+
 export interface Evaluation {
   score: number; // 0-100
   feedback: string;
-  points_couverts: string[];
+  criteria: EvaluationCriterion[];
   points_manquants: string[];
   follow_up_question: string | null;
 }

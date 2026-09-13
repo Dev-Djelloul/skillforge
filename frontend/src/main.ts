@@ -21,6 +21,7 @@ import {
   type SessionDetailResponse,
   type TimelineResponse,
   type Resource,
+  type EvaluationCriterion,
   type RevisionPlanItem,
   type SessionSetup,
 } from './api';
@@ -577,6 +578,30 @@ function renderResourceCard(r: Resource): string {
   `;
 }
 
+function renderCriteriaChecklist(criteria: EvaluationCriterion[]): string {
+  if (criteria.length === 0) return '';
+
+  const coveredCount = criteria.filter((c) => c.covered).length;
+
+  return `
+    <div class="feedback-section">
+      <span class="feedback-section-title">Sur quoi porte la note — ${coveredCount}/${criteria.length} critères couverts</span>
+      <ul class="criteria-list">
+        ${criteria
+          .map(
+            (c) => `
+              <li class="criteria-item ${c.covered ? 'criteria-covered' : 'criteria-missed'}">
+                <span class="criteria-mark">${c.covered ? '✓' : '✗'}</span>
+                <span>${escapeHtml(c.text)}</span>
+              </li>
+            `
+          )
+          .join('')}
+      </ul>
+    </div>
+  `;
+}
+
 function renderFeedback(): string {
   const session = state.session!;
   const answer = state.lastAnswer!;
@@ -595,11 +620,8 @@ function renderFeedback(): string {
         <p class="feedback-answer-text">${escapeHtml(evaluation.feedback)}</p>
       </div>
 
-      ${
-        evaluation.points_couverts.length
-          ? `<div class="feedback-section feedback-section-primary"><span class="feedback-section-title feedback-section-title-primary">Les points clés à retenir</span><ul>${evaluation.points_couverts.map((p) => `<li>${escapeHtml(p)}</li>`).join('')}</ul></div>`
-          : ''
-      }
+      ${renderCriteriaChecklist(evaluation.criteria)}
+
       ${
         evaluation.points_manquants.length
           ? `<div class="feedback-section feedback-section-accent2"><span class="feedback-section-title feedback-section-title-accent2">Nuances supplémentaires</span><ul>${evaluation.points_manquants.map((p) => `<li>${escapeHtml(p)}</li>`).join('')}</ul></div>`
