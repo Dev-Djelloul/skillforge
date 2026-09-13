@@ -26,7 +26,7 @@ interface GeneratedQuestion {
  * on les sépare pour donner une carte de recherche par thème plutôt qu'une
  * seule requête fourre-tout illisible.
  */
-function buildSearchResources(topic: string): Resource[] {
+function buildSearchResources(topic: string, categoryLabel: string): Resource[] {
   const themes = topic
     .split(',')
     .map((t) => t.trim())
@@ -35,7 +35,7 @@ function buildSearchResources(topic: string): Resource[] {
 
   if (themes.length === 0) return [];
 
-  return themes.flatMap((theme) => {
+  const resources: Resource[] = themes.flatMap((theme) => {
     const query = encodeURIComponent(theme);
     return [
       {
@@ -50,6 +50,21 @@ function buildSearchResources(topic: string): Resource[] {
       },
     ];
   });
+
+  // W3Schools uniquement pertinent pour le développement web — recherche
+  // restreinte au site via Google plutôt qu'un lien direct vers une page
+  // W3Schools précise : impossible de garantir qu'un chemin interne
+  // deviné par l'IA (ex: /js/js_arrays.asp) existe réellement.
+  if (categoryLabel.toLowerCase().includes('développement web')) {
+    const firstTheme = themes[0];
+    resources.push({
+      type: 'w3schools' as const,
+      title: `W3Schools : ${firstTheme}`,
+      url: `https://www.google.com/search?q=${encodeURIComponent(`site:w3schools.com ${firstTheme}`)}`,
+    });
+  }
+
+  return resources;
 }
 
 async function generateQuestion(
@@ -131,7 +146,7 @@ export async function generateAndStoreQuestion(
       candidateContext
     );
     const rubricJson = JSON.stringify(generated.rubric);
-    const resourcesJson = JSON.stringify(buildSearchResources(generated.topic));
+    const resourcesJson = JSON.stringify(buildSearchResources(generated.topic, categoryLabel));
 
     const insert = await env.DB.prepare(
       `INSERT INTO questions (category_id, difficulty, prompt, rubric, hint, resources) VALUES (?, ?, ?, ?, ?, ?)`

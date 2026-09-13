@@ -37,7 +37,7 @@ export interface StartSessionResponse {
 }
 
 export interface Resource {
-  type: 'article' | 'video';
+  type: 'article' | 'video' | 'w3schools';
   title: string;
   url: string;
 }

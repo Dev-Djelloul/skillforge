@@ -553,17 +553,24 @@ function faviconUrl(pageUrl: string): string {
 }
 
 function renderResourceCard(r: Resource): string {
-  const isVideo = r.type === 'video';
-  const preview = isVideo
-    ? `<div class="resource-icon resource-icon-video">${VIDEO_ICON_SVG}</div>`
-    : `<img class="resource-icon" src="${escapeAttr(faviconUrl(r.url))}" alt="" width="20" height="20" />`;
+  // Le lien W3Schools passe par une recherche Google restreinte au site
+  // (jamais de chemin interne deviné) — le logo affiché doit donc être
+  // celui de w3schools.com explicitement, pas celui du domaine du lien
+  // (google.com), sans quoi on afficherait le logo Google par erreur.
+  const iconDomain = r.type === 'w3schools' ? 'https://www.w3schools.com' : r.url;
+  const preview =
+    r.type === 'video'
+      ? `<div class="resource-icon resource-icon-video">${VIDEO_ICON_SVG}</div>`
+      : `<img class="resource-icon" src="${escapeAttr(faviconUrl(iconDomain))}" alt="" width="20" height="20" />`;
+
+  const typeLabel = r.type === 'video' ? 'Rechercher des vidéos' : r.type === 'w3schools' ? 'W3Schools' : 'Article';
 
   return `
     <a class="resource-card" href="${escapeAttr(r.url)}" target="_blank" rel="noopener noreferrer">
       ${preview}
       <div class="resource-text">
         <div class="resource-title">${escapeHtml(r.title)}</div>
-        <div class="resource-type">${isVideo ? 'Rechercher des vidéos' : 'Article'}</div>
+        <div class="resource-type">${typeLabel}</div>
       </div>
     </a>
   `;
