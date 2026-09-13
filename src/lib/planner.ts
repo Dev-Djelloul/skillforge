@@ -51,14 +51,24 @@ Pour CHAQUE famille listée par le candidat, dans le même ordre, fournis :
 Réponds STRICTEMENT en JSON valide, sans texte autour :
 {"items": [{"category": "<nom exact de la famille>", "summary": "...", "focus_topic": "...", "exercise": "..."}, ...], "closing_note": "<une phrase encourageante sur le point fort du candidat, en français, sans markdown>"}`;
 
-  const raw = await callOpenRouter(
-    env.OPENROUTER_API_KEY,
-    [
-      { role: 'system', content: systemPrompt },
-      { role: 'user', content: `Bilan du candidat :\n${summaryLines}` },
-    ],
-    1024
-  );
+  // Le plan de révision est un "plus" pédagogique, jamais une donnée
+  // bloquante : si l'IA est indisponible (surcharge du plan gratuit...),
+  // on retombe sur un plan minimal basé uniquement sur les scores plutôt
+  // que de faire échouer toute la clôture de session — le candidat doit
+  // toujours pouvoir voir son bilan.
+  let raw = '';
+  try {
+    raw = await callOpenRouter(
+      env.OPENROUTER_API_KEY,
+      [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: `Bilan du candidat :\n${summaryLines}` },
+      ],
+      1024
+    );
+  } catch {
+    raw = '';
+  }
 
   return parseRevisionPlan(raw, sorted);
 }
