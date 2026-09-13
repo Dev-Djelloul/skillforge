@@ -615,6 +615,75 @@ textarea:focus-visible {
   line-height: 1.5;
 }
 
+.revision-item {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border-width: 1.5px;
+}
+.revision-item-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.revision-priority {
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+  padding: 4px 10px;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.revision-category {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-text);
+  flex: 1;
+}
+.revision-score {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+}
+.revision-summary {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.65;
+  color: var(--color-text-muted);
+}
+.revision-resource {
+  align-self: flex-start;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--color-primary);
+  text-decoration: none;
+}
+.revision-resource:hover { text-decoration: underline; }
+.revision-exercise {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: color-mix(in srgb, var(--color-level-1) 8%, transparent);
+  border: 1px solid var(--color-level-1);
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+.revision-exercise p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--color-text-muted);
+}
+.revision-closing {
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--color-text-muted);
+  text-align: center;
+  padding: 8px 0;
+}
+
 .resumable-banner {
   border-color: var(--color-accent);
   text-align: center;

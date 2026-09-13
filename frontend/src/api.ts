@@ -61,9 +61,24 @@ export interface CategoryBreakdown {
   attempts: number;
 }
 
+export interface RevisionPlanItem {
+  category: string;
+  priority: number;
+  score: number;
+  summary: string;
+  focus_topic: string;
+  resource_url: string;
+  exercise: string;
+}
+
+export interface RevisionPlan {
+  items: RevisionPlanItem[];
+  closing_note: string;
+}
+
 export interface CompleteSessionResponse {
   breakdown: CategoryBreakdown[];
-  revision_plan: string;
+  revision_plan: RevisionPlan;
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {

@@ -21,6 +21,7 @@ import {
   type SessionDetailResponse,
   type TimelineResponse,
   type Resource,
+  type RevisionPlanItem,
   type SessionSetup,
 } from './api';
 
@@ -649,6 +650,31 @@ function renderFollowUpSection(followUpQuestion: string | null): string {
   `;
 }
 
+function renderRevisionPlanItem(item: RevisionPlanItem): string {
+  const color = scoreColor(item.score);
+  return `
+    <div class="card revision-item" style="border-color:${color};">
+      <div class="revision-item-header">
+        <span class="revision-priority" style="background:${color};">Priorité ${item.priority}</span>
+        <span class="revision-category">${escapeHtml(item.category)}</span>
+        <span class="revision-score" style="color:${color};">${item.score}%</span>
+      </div>
+      <p class="revision-summary">${escapeHtml(item.summary)}</p>
+      <a class="revision-resource" href="${escapeAttr(item.resource_url)}" target="_blank" rel="noopener noreferrer">
+        🔎 Approfondir : ${escapeHtml(item.focus_topic)}
+      </a>
+      ${
+        item.exercise
+          ? `<div class="revision-exercise">
+              <span class="feedback-section-title feedback-section-title-accent2">✏️ Exercice pratique</span>
+              <p>${escapeHtml(item.exercise)}</p>
+            </div>`
+          : ''
+      }
+    </div>
+  `;
+}
+
 function renderResults(): string {
   const results = state.results!;
   const overall = Math.round(
@@ -678,9 +704,14 @@ function renderResults(): string {
         .join('')}
     </div>
 
-    <div class="card" style="margin-top:20px; display:flex; flex-direction:column; gap:10px;">
-      <strong style="font-size:14px;">Plan de révision personnalisé</strong>
-      <p style="margin:0; font-size:13px; line-height:1.6; color:var(--color-text-muted); white-space:pre-line;">${escapeHtml(results.revision_plan)}</p>
+    <div style="margin-top:20px; display:flex; flex-direction:column; gap:14px;">
+      <strong style="font-size:16px;">Plan de révision personnalisé</strong>
+      ${results.revision_plan.items.map(renderRevisionPlanItem).join('')}
+      ${
+        results.revision_plan.closing_note
+          ? `<div class="revision-closing">🌟 ${escapeHtml(results.revision_plan.closing_note)}</div>`
+          : ''
+      }
     </div>
 
     ${state.shareMessage ? `<div class="hint-box no-print" style="margin-top:16px;">${escapeHtml(state.shareMessage)}</div>` : ''}
