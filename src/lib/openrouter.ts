@@ -1,9 +1,10 @@
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
 
-// Identifiant exact du modèle configuré côté compte OpenRouter de l'utilisateur
-// (vérifié dans les logs OpenRouter — un preset nommé "Luna" pointant vers ce
-// modèle OpenAI), à ne pas confondre avec un nom d'affichage ou un preset slug.
-const MODEL = 'openai/gpt-5.6-luna';
+// Modèle gratuit choisi sur OpenRouter (identifiant exact copié depuis la
+// fiche du modèle, pas deviné) — plan gratuit plutôt qu'un modèle payant,
+// au prix d'une latence et de limites de débit potentiellement plus
+// contraignantes sur le plan free d'OpenRouter.
+const MODEL = 'google/gemma-4-26b-a4b-it:free';
 
 export interface ChatMessage {
   role: 'system' | 'user';
