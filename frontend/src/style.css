@@ -687,8 +687,6 @@ textarea:focus-visible {
 }
 .feedback-section-title-primary { color: var(--color-primary); }
 .feedback-section-title-accent2 { color: var(--color-level-1); }
-.feedback-section-primary ul { color: var(--color-primary); }
-.feedback-section-accent2 ul { color: var(--color-level-1); }
 .feedback-section ul {
   margin: 0;
   padding-left: 20px;
@@ -699,6 +697,11 @@ textarea:focus-visible {
   flex-direction: column;
   gap: 4px;
 }
+/* Déclarées après la règle générale ci-dessus pour la surcharger malgré
+   une spécificité CSS égale (classe + élément des deux côtés) — l'ordre
+   du fichier fait sinon gagner la règle grise déclarée en dernier. */
+.feedback-section-primary ul { color: var(--color-primary); }
+.feedback-section-accent2 ul { color: var(--color-level-1); }
 
 .resources {
   display: flex;
