@@ -308,7 +308,10 @@ function topBar(showNav = true): string {
       <div class="logo" id="logo-home">${LOGO_SVG}<span>Skill<span class="accent">Forge</span></span></div>
       ${
         showNav
-          ? `<nav class="top-nav">
+          ? `<button class="nav-menu-toggle" id="nav-menu-toggle" type="button" aria-label="Ouvrir le menu" aria-controls="site-navigation" aria-expanded="false">
+              <span></span><span></span><span></span>
+            </button>
+            <nav class="top-nav" id="site-navigation">
               <button class="nav-link" id="nav-progress-btn">Mes progrès</button>
               <button class="nav-link" id="nav-history-btn">Historique</button>
               <a class="nav-link nav-link-accent" href="https://news.ycombinator.com/" target="_blank" rel="noopener noreferrer">Actus tech</a>
@@ -1094,6 +1097,13 @@ function renderConfirmDeleteModal(): string {
 }
 
 function attachHandlers(): void {
+  document.getElementById('nav-menu-toggle')?.addEventListener('click', (event) => {
+    const toggle = event.currentTarget as HTMLButtonElement;
+    const topBar = toggle.closest('.top-bar');
+    const isOpen = topBar?.classList.toggle('menu-open') ?? false;
+    toggle.setAttribute('aria-expanded', String(isOpen));
+    toggle.setAttribute('aria-label', isOpen ? 'Fermer le menu' : 'Ouvrir le menu');
+  });
   document.getElementById('goto-setup-btn')?.addEventListener('click', onGoToSetup);
   document.getElementById('resume-session-btn')?.addEventListener('click', onResumeSession);
   document.getElementById('dismiss-resumable-btn')?.addEventListener('click', onDismissResumable);
