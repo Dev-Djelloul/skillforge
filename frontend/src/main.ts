@@ -302,6 +302,13 @@ function startQuestionTimer(difficulty: number): void {
 
 const app = document.getElementById('app')!;
 
+document.addEventListener('pointerdown', (event) => {
+  if (!(event.target instanceof Element) || event.target.closest('.family-card-wrap')) return;
+
+  const focusedFamily = document.activeElement?.closest('.family-card-wrap');
+  if (focusedFamily instanceof HTMLElement) focusedFamily.blur();
+});
+
 function topBar(showNav = true): string {
   return `
     <div class="top-bar">
